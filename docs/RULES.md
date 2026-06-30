@@ -200,21 +200,25 @@ git diff
 Закоммитить:
 
 ```bash
-git add .
+git add . # или путь до файла/папки, которую хочешь добавить
 git commit -m "Add game session"
 ```
 
 Запушить ветку:
 
 ```bash
-git push -u origin feature/12-game-session
+git push -u origin heesooyaam/12-game-session
 ```
+
+Если поменял что-то еще, снова добавляешь, делаешь коммит и пушишь, но писать "-u origin heesooyaam/12-game-session" не надо
 
 Открыть pull request:
 
 ```text
-feature/12-game-session -> trunk
+heesooyaam/12-game-session -> trunk
 ```
+
+И покликать в ui, должно быть что-то вроде "Create pull request"
 
 Перевести задачу в статус:
 
@@ -222,16 +226,16 @@ feature/12-game-session -> trunk
 Review
 ```
 
-Если после ревью есть замечания, задача переводится в:
+Если после ревью есть замечания, ревьюер переводит статус в:
 
 ```text
 Need changes
 ```
 
-После исправления замечаний задача снова переводится в:
+Когда разработчик начал исправлять замечания, задача переводится в статус:
 
 ```text
-Review
+In Progress
 ```
 
 Когда pull request смержен в `trunk`, задача переводится в:

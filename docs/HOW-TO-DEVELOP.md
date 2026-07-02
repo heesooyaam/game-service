@@ -169,6 +169,71 @@ src/      -> внутренности библиотеки
 
 Это помогает не превращать внутренние файлы в случайный API.
 
+## Минимальный словарь CMake
+
+`add_subdirectory(path)` подключает другую папку с её `CMakeLists.txt`. Обычно корневой `CMakeLists.txt` просто перечисляет крупные части проекта:
+
+```cmake
+add_subdirectory(library/common)
+add_subdirectory(library/example)
+add_subdirectory(bin/game_service)
+```
+
+`add_library(name ...)` создает библиотеку. В скобках перечисляются `.cpp` файлы, из которых она собирается:
+
+```cmake
+add_library(game_example
+    src/heart.cpp
+)
+```
+
+`add_executable(name ...)` создает исполняемый файл. Так описываются сервисы и тестовые бинарники:
+
+```cmake
+add_executable(game_service
+    main.cpp
+)
+```
+
+`target_include_directories(name ...)` говорит компилятору, где искать заголовки для target-а:
+
+```cmake
+target_include_directories(game_example
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+```
+
+`target_link_libraries(name ...)` подключает зависимости. Если бинарь использует библиотеку, он должен с ней слинковаться:
+
+```cmake
+target_link_libraries(game_service
+    PRIVATE
+        game_common
+)
+```
+
+`add_test(NAME ... COMMAND ...)` регистрирует тест для `ctest`:
+
+```cmake
+add_test(NAME game_example_ut COMMAND game_example_ut)
+```
+
+`PRIVATE`, `PUBLIC`, `INTERFACE` описывают, кому видна настройка или зависимость:
+
+```text
+PRIVATE   нужна только текущему target-у
+PUBLIC    нужна текущему target-у и тем, кто от него зависит
+INTERFACE нужна только тем, кто зависит от target-а
+```
+
+На старте чаще всего достаточно двух правил:
+
+```text
+target_include_directories(library PUBLIC include)
+target_link_libraries(binary PRIVATE library)
+```
+
 ## Пример CMakeLists для библиотеки
 
 `library/example/CMakeLists.txt`:

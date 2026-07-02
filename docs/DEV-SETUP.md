@@ -113,10 +113,10 @@ ssh game-service-dev
 Как в прошлый раз создаем ключ:
 
 ```bash
-ssh-keygen -t ed25519 -f ~/.ssh/github-turn-forge -C "game-service-dev-{USER_NAME}"
+ssh-keygen -t ed25519 -f ~/.ssh/github-game-service -C "game-service-dev-{USER_NAME}"
 ```
 
-Заходим в [настройки репозитория](https://github.com/heesooyaam/turn-forge/settings/keys)
+Заходим в [настройки репозитория](https://github.com/heesooyaam/game-service/settings/keys)
 и нажимаем **Add deploy key**, вставляем свой публичный ключ и не забываем тыкнуть **Allow write access**
 
 P.S.: если не получится это сделать, надо попрочить владельца репы
@@ -129,7 +129,7 @@ Host github.com
     HostName ssh.github.com
     Port 443
     User git
-    IdentityFile ~/.ssh/github-turn-forge
+    IdentityFile ~/.ssh/github-game-service
     IdentitiesOnly yes
 ```
 
@@ -142,24 +142,24 @@ mkdir -p ~/projects
 cd ~/projects
 ```
 
-## 7. Подтянуть репозиторий `turn-forge`
+## 7. Подтянуть репозиторий `game-service`
 
 Репозиторий проекта называется:
 
 ```text
-turn-forge
+game-service
 ```
 
 Клонировать его нужно так:
 
 ```bash
-git clone git@github.com:heesooyaam/turn-forge.git
+git clone git@github.com:heesooyaam/game-service.git
 ```
 
 Потом перейти в папку проекта:
 
 ```bash
-cd turn-forge
+cd game-service
 git status
 ```
 
@@ -184,12 +184,12 @@ git status
 
 ```text
 ~/.ssh/game-service-dev
-~/.ssh/github-turn-forge
+~/.ssh/github-game-service
 ```
 
 Отправлять можно только публичные ключи:
 
 ```text
 ~/.ssh/game-service-dev.pub
-~/.ssh/github-turn-forge.pub
+~/.ssh/github-game-service.pub
 ```

@@ -1,6 +1,6 @@
-# Turn Forge
+# Game Service
 
-`turn-forge` — учебный C++ backend-проект для пошаговой игровой логики и сетевого сервиса.
+`game-service` — учебный C++ backend-проект для написания игровой логики и сетевого сервиса.
 
 ## Где ведём задачи
 
@@ -337,7 +337,7 @@ docs/dev-machine-guide.md
 Обычно рабочая папка проекта на dev-тачке:
 
 ```text
-~/projects/turn-forge
+~/projects/game-service
 ```
 
 ## Что нельзя делать

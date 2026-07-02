@@ -1,2 +1,2 @@
-# turn-forge
-Turn-based game creator platform
+# Game-service
+Game creator platform

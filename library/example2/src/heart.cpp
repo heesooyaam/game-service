@@ -8,9 +8,3 @@ int sum(int first_argument, int second_argument) {
 }
 
 } //namespace game::example2
-
-
-
-
-
-

@@ -9,4 +9,3 @@ target_include_directories(integer_sum
 )
 
 add_subdirectory(tests/ut)
-

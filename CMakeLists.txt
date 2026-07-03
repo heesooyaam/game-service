@@ -17,4 +17,3 @@ add_subdirectory(bin/gateway_service)
 add_subdirectory(bin/heart_writer)
 add_subdirectory(bin/game_service)
 add_subdirectory(bin/storage_service)
-

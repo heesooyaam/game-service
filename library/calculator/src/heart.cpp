@@ -1,9 +1,9 @@
 #include <integer/sum/heart.h>
 
 
-namespace calculator::integer::sum {
+namespace game::example2 {
 
-int heart(int first_argument, int second_argument) {
+int sum(int first_argument, int second_argument) {
     return first_argument + second_argument;
 }
 

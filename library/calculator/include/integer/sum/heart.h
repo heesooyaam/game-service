@@ -1,7 +1,7 @@
 #pragma once 
 
-namespace calculator::integer::sum {
+namespace game::example2 {
 
-int heart(int first_argument, int second_argument);
+int sum(int first_argument, int second_argument);
 
-} //namespace calculator::integer::sum
+} //namespace game::example2

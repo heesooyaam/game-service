@@ -1,6 +1,6 @@
-#include <cassert>
 #include <game/example2/heart.h>
 
+#include <cassert>
 
 int main() {
     assert(game::example2::sum(1, 2) == 3);

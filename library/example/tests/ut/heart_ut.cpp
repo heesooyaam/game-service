@@ -1,7 +1,7 @@
+#include <game/example/heart.h>
+
 #include <cassert>
 #include <string>
-
-#include <game/example/heart.h>
 
 int main() {
     assert(game::example::heart() == "<3");

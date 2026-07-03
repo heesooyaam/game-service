@@ -1,8 +1,8 @@
 #pragma once
 
-#include <optional>
-
 #include <game/common/ids.h>
+
+#include <optional>
 
 namespace game::game_core {
 

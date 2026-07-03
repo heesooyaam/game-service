@@ -1,12 +1,12 @@
 #pragma once
 
-#include <string>
-#include <vector>
-
 #include <game/common/ids.h>
 #include <game/game_core/game_module.h>
 #include <game/game_core/game_result.h>
 #include <game/json/json_value.h>
+
+#include <string>
+#include <vector>
 
 namespace game::game_core {
 

@@ -4,28 +4,26 @@
 #include <variant>
 #include <vector>
 #include <string>
-#include <unordered_map>
+#include <map>
 
-namespace json::value {
+namespace NJson {
 
     class TJsonValue;
 
-    struct TNull{
-        bool operator==(const TNull& other) const { 
-            return true;
-        }
-    };
+    using TInteger = int32_t;
+    using TDouble = double;
     
-    using TNumber = double;
+    using TNull = std::monostate;
+    using TNumber = std::variant<TInteger, TDouble>;
     using TBoolean = bool;
     using TString = std::string;
     using TArray = std::vector<TJsonValue>;
-    using TObject = std::unordered_map<TString, TJsonValue>;
+    using TObject = std::map<TString, TJsonValue>;
 
     using TArrayPtr = std::unique_ptr<TArray>;
     using TObjectPtr = std::unique_ptr<TObject>;
 
-    using TStorage = std::variant<TNull, TNumber, TBoolean, TString, TObjectPtr, TArrayPtr, std::monostate>;
+    using TStorage = std::variant<TNull, TNumber, TBoolean, TString, TObjectPtr, TArrayPtr>;
 
     class TJsonValue {
     public:
@@ -33,7 +31,8 @@ namespace json::value {
         TJsonValue() = default;
 
         explicit TJsonValue(TNull);
-        explicit TJsonValue(TNumber);
+        explicit TJsonValue(TInteger);
+        explicit TJsonValue(TDouble);
         explicit TJsonValue(TBoolean);
         explicit TJsonValue(TString&&);
         explicit TJsonValue(TArray&&);
@@ -45,7 +44,8 @@ namespace json::value {
         explicit TJsonValue(const char*);
 
         TJsonValue& operator=(TNull);
-        TJsonValue& operator=(TNumber);
+        TJsonValue& operator=(TInteger);
+        TJsonValue& operator=(TDouble);
         TJsonValue& operator=(TBoolean);
         TJsonValue& operator=(TString&&);
         TJsonValue& operator=(TArray&&);
@@ -53,6 +53,8 @@ namespace json::value {
         TJsonValue& operator=(const TString&);       
         TJsonValue& operator=(const TArray&);
         TJsonValue& operator=(const TObject&);
+
+        TJsonValue& operator=(const char*);
 
         explicit TJsonValue(const TJsonValue&);
         explicit TJsonValue(TJsonValue&&) noexcept;
@@ -63,16 +65,17 @@ namespace json::value {
         TStorage& get_root_value();
         const TStorage& get_root_value() const;
 
-        bool operator==(const TJsonValue& other) const;
-        bool operator!=(const TJsonValue& other) const;
+        bool operator==(const TJsonValue&) const;
+        bool operator!=(const TJsonValue&) const;
 
         ~TJsonValue() = default;
     
     private:
         TStorage root_value_ = std::monostate();
 
+        void clear();
         static TJsonValue deep_copy(const TJsonValue&);
         static bool deep_equal_check(const TJsonValue&, const TJsonValue&);
     };
 
-} //namespace json::value  
+} //namespace NJson 

@@ -1,18 +1,24 @@
 #include <json/json_value.h>
 
+#include <cassert>
+
 namespace {
     template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
     template<class... Ts> overload(Ts...) -> overload<Ts...>;
 }
 
-namespace json::value {
+namespace NJson {
 
     TJsonValue::TJsonValue(TNull null) 
         : root_value_(null)
     {}
 
-    TJsonValue::TJsonValue(TNumber number)
-        : root_value_(number)
+    TJsonValue::TJsonValue(TInteger integer_number)
+        : root_value_(TNumber(integer_number))
+    {}
+
+    TJsonValue::TJsonValue(TDouble double_number) 
+        : root_value_(TNumber(double_number))
     {}
 
     TJsonValue::TJsonValue(TBoolean boolean) 
@@ -52,9 +58,14 @@ namespace json::value {
         return *this;
     }
 
-    TJsonValue& TJsonValue::operator=(TNumber number) {
-        root_value_ = number;
-        return *this;
+    TJsonValue& TJsonValue::operator=(TInteger integer_number) {
+        root_value_ = TNumber(integer_number);
+        return*this;
+    }
+
+    TJsonValue& TJsonValue::operator=(TDouble double_number) {
+        root_value_ = TNumber(double_number);
+        return*this;
     }
 
     TJsonValue& TJsonValue::operator=(TBoolean boolean) {
@@ -92,13 +103,20 @@ namespace json::value {
         return *this;
     }
 
+    TJsonValue& TJsonValue::operator=(const char* cstr) {
+        root_value_ = TString(cstr);
+        return *this;
+    }
+
     TJsonValue::TJsonValue(const TJsonValue& other) 
         : root_value_(std::move(deep_copy(other).root_value_))
     {}
 
     TJsonValue::TJsonValue(TJsonValue&& other) noexcept 
         : root_value_(std::move(other.root_value_))
-    {}
+    {
+        other.clear();
+    }
 
     TJsonValue& TJsonValue::operator=(const TJsonValue& other) {
         if (this == std::addressof(other)) {
@@ -115,6 +133,7 @@ namespace json::value {
         }
 
         root_value_ = std::move(other.root_value_);
+        other.clear();
         return *this;
     }
 
@@ -134,65 +153,76 @@ namespace json::value {
         return !(*this == other);
     }
 
+    void TJsonValue::clear() {
+        root_value_ = TNull();
+    }
+
     TJsonValue TJsonValue::deep_copy(const TJsonValue& other) {
-
-        if (other.root_value_.valueless_by_exception()) {
-            return TJsonValue();
-        }
-
         return std::visit(overload{
-            [](const std::monostate&) { return TJsonValue(); },
-            [](const TNull& null) { return TJsonValue(null); },
-            [](const TNumber& number) { return TJsonValue(number); },
-            [](const TBoolean& boolean) { return TJsonValue(boolean); },
-            [](const TString& string) { return TJsonValue(string); },
+
+            [](const TNull&) { 
+                return TJsonValue(); 
+            },
+
+            [](const TNumber& number) { 
+                return std::visit(overload{
+
+                    [](const TInteger& integer_number) {
+                        return TJsonValue(integer_number);
+                    },
+
+                    [](const TDouble& double_number) {
+                        return TJsonValue(double_number);
+                    }
+
+                }, number);
+            },
+
+            [](const TBoolean& boolean) {
+                 return TJsonValue(boolean); 
+            },
+
+            [](const TString& string) { 
+                return TJsonValue(string); 
+            },
+
             [](const TArrayPtr& array_ptr) { 
-                if (!array_ptr) {
-                    return TJsonValue(TArray());
-                }
+                assert(array_ptr);
                 return TJsonValue(*array_ptr); 
             },
+
             [](const TObjectPtr& object_ptr) { 
-                if (!object_ptr) {
-                    return TJsonValue(TObject());
-                }
+                assert(object_ptr);
                 return TJsonValue(*object_ptr); 
             }
+
         }, other.root_value_);
     }
 
     bool TJsonValue::deep_equal_check(const TJsonValue& lhs, const TJsonValue& rhs) {
-
-        if (lhs.root_value_.valueless_by_exception() || rhs.root_value_.valueless_by_exception()) {
-            return false;
-        }
-
         return std::visit(overload{
+
             [](const TArrayPtr& lhs_ptr, const TArrayPtr& rhs_ptr) {
-                if (!lhs_ptr && !rhs_ptr) {
-                    return true;
-                }
-                if (!lhs_ptr || !rhs_ptr) {
-                    return false;
-                }
+                assert(lhs_ptr);
+                assert(rhs_ptr);
                 return *lhs_ptr == *rhs_ptr;
             },
+
             [](const TObjectPtr& lhs_ptr, const TObjectPtr& rhs_ptr) {
-                if (!lhs_ptr && !rhs_ptr) {
-                    return true;
-                }
-                if (!lhs_ptr || !rhs_ptr) {
-                    return false;
-                }
+                assert(lhs_ptr);
+                assert(rhs_ptr);
                 return *lhs_ptr == *rhs_ptr;
             },
+
             []<typename T>(const T& lhs, const T& rhs) {
                 return lhs == rhs;
             },
+
             []<typename Tl, typename Tr>(const Tl& lhs, const Tr& rhs) {
                 return false;
             }
+
         }, lhs.root_value_, rhs.root_value_);
     }
 
-} //namespace json::value
+} //namespace NJson

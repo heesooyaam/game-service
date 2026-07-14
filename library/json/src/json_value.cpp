@@ -118,7 +118,28 @@ namespace json::value {
         return *this;
     }
 
+    TStorage& TJsonValue::get_root_value() {
+        return root_value_;
+    }
+
+    const TStorage& TJsonValue::get_root_value() const {
+        return root_value_;
+    }
+
+    bool TJsonValue::operator==(const TJsonValue& other) const {
+        return deep_equal_check(*this, other);
+    }
+     
+    bool TJsonValue::operator!=(const TJsonValue& other) const {
+        return !(*this == other);
+    }
+
     TJsonValue TJsonValue::deep_copy(const TJsonValue& other) {
+
+        if (other.root_value_.valueless_by_exception()) {
+            return TJsonValue();
+        }
+
         return std::visit(overload{
             [](const std::monostate&) { return TJsonValue(); },
             [](const TNull& null) { return TJsonValue(null); },
@@ -138,6 +159,40 @@ namespace json::value {
                 return TJsonValue(*object_ptr); 
             }
         }, other.root_value_);
+    }
+
+    bool TJsonValue::deep_equal_check(const TJsonValue& lhs, const TJsonValue& rhs) {
+
+        if (lhs.root_value_.valueless_by_exception() || rhs.root_value_.valueless_by_exception()) {
+            return false;
+        }
+
+        return std::visit(overload{
+            [](const TArrayPtr& lhs_ptr, const TArrayPtr& rhs_ptr) {
+                if (!lhs_ptr && !rhs_ptr) {
+                    return true;
+                }
+                if (!lhs_ptr || !rhs_ptr) {
+                    return false;
+                }
+                return *lhs_ptr == *rhs_ptr;
+            },
+            [](const TObjectPtr& lhs_ptr, const TObjectPtr& rhs_ptr) {
+                if (!lhs_ptr && !rhs_ptr) {
+                    return true;
+                }
+                if (!lhs_ptr || !rhs_ptr) {
+                    return false;
+                }
+                return *lhs_ptr == *rhs_ptr;
+            },
+            []<typename T>(const T& lhs, const T& rhs) {
+                return lhs == rhs;
+            },
+            []<typename Tl, typename Tr>(const Tl& lhs, const Tr& rhs) {
+                return false;
+            }
+        }, lhs.root_value_, rhs.root_value_);
     }
 
 } //namespace json::value

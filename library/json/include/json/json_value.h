@@ -10,7 +10,12 @@ namespace json::value {
 
     class TJsonValue;
 
-    struct TNull{};
+    struct TNull{
+        bool operator==(const TNull& other) const { 
+            return true;
+        }
+    };
+    
     using TNumber = double;
     using TBoolean = bool;
     using TString = std::string;
@@ -21,7 +26,6 @@ namespace json::value {
     using TObjectPtr = std::unique_ptr<TObject>;
 
     using TStorage = std::variant<TNull, TNumber, TBoolean, TString, TObjectPtr, TArrayPtr, std::monostate>;
-
 
     class TJsonValue {
     public:
@@ -56,12 +60,19 @@ namespace json::value {
         TJsonValue& operator=(const TJsonValue&);
         TJsonValue& operator=(TJsonValue&&) noexcept;
 
+        TStorage& get_root_value();
+        const TStorage& get_root_value() const;
+
+        bool operator==(const TJsonValue& other) const;
+        bool operator!=(const TJsonValue& other) const;
+
         ~TJsonValue() = default;
     
     private:
         TStorage root_value_ = std::monostate();
 
         static TJsonValue deep_copy(const TJsonValue&);
+        static bool deep_equal_check(const TJsonValue&, const TJsonValue&);
     };
 
 } //namespace json::value  

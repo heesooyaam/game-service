@@ -1,5 +1,6 @@
-#include <json/json_value.h>
 #include <game/common/overload.h>
+#include <json/error.h>
+#include <json/json_value.h>
 
 #include <cassert>
 
@@ -115,12 +116,36 @@ namespace NJson {
         return *this;
     }
 
-    TStorage& TJsonValue::get_root_value() {
-        return root_value_;
+    EJsonType TJsonValue::get_value_type() const {
+        return static_cast<EJsonType>(root_value_.index());
     }
 
-    const TStorage& TJsonValue::get_root_value() const {
-        return root_value_;
+    bool TJsonValue::is_null() const {
+        return std::holds_alternative<TNull>(root_value_);
+    }
+
+    bool TJsonValue::is_integer() const {
+        return std::holds_alternative<TInteger>(root_value_);
+    }
+
+    bool TJsonValue::is_double() const {
+        return std::holds_alternative<TDouble>(root_value_);
+    }
+
+    bool TJsonValue::is_boolean() const {
+        return std::holds_alternative<TBoolean>(root_value_);
+    }
+
+    bool TJsonValue::is_string() const {
+        return std::holds_alternative<TString>(root_value_);
+    }
+
+    bool TJsonValue::is_array() const {
+        return std::holds_alternative<TArrayPtr>(root_value_);
+    }
+
+    bool TJsonValue::is_object() const {
+        return std::holds_alternative<TObjectPtr>(root_value_);
     }
 
     bool TJsonValue::operator==(const TJsonValue& other) const {
@@ -129,6 +154,128 @@ namespace NJson {
      
     bool TJsonValue::operator!=(const TJsonValue& other) const {
         return !(*this == other);
+    }
+
+    TInteger& TJsonValue::get_integer() {
+        if (!is_integer()) {
+            throw NError::TAccessError("Bad Access Error: Json is not integer");
+        }
+        return std::get<TInteger>(root_value_);
+    }
+
+    TDouble& TJsonValue::get_double() {
+        if (!is_double()) {
+            throw NError::TAccessError("Bad Access Error: Json is not double");
+        }
+        return std::get<TDouble>(root_value_);
+    }
+
+    TBoolean& TJsonValue::get_boolean() {
+        if (!is_boolean()) {
+            throw NError::TAccessError("Bad Access Error: Json is not boolean");
+        }
+        return std::get<TBoolean>(root_value_);
+    }
+
+    TString& TJsonValue::get_string() {
+        if (!is_string()) {
+            throw NError::TAccessError("Bad Access Error: Json is not string");
+        }
+        return std::get<TString>(root_value_);
+    }
+
+    TArray& TJsonValue::get_array() {
+        if (!is_array()) {
+            throw NError::TAccessError("Bad Access Error: Json is not array");
+        }
+        return *std::get<TArrayPtr>(root_value_);
+    }
+
+    TObject& TJsonValue::get_object() {
+        if (!is_object()) {
+            throw NError::TAccessError("Bad Access Error: Json is not  object");
+        }
+        return *std::get<TObjectPtr>(root_value_);
+    }
+
+    const TInteger& TJsonValue::get_integer() const {
+        if (!is_integer()) {
+            throw NError::TAccessError("Bad Access Error: Json is not integer");
+        }
+        return std::get<TInteger>(root_value_);
+    }
+
+    const TDouble& TJsonValue::get_double() const {
+        if (!is_double()) {
+            throw NError::TAccessError("Bad Access Error: Json is not double");
+        }
+        return std::get<TDouble>(root_value_);
+    }
+
+    const TBoolean& TJsonValue::get_boolean() const {
+        if (!is_boolean()) {
+            throw NError::TAccessError("Bad Access Error: Json is not boolean");
+        }
+        return std::get<TBoolean>(root_value_);
+    }
+
+    const TString& TJsonValue::get_string() const {
+        if (!is_string()) {
+            throw NError::TAccessError("Bad Access Error: Json is not string");
+        }
+        return std::get<TString>(root_value_);
+    }
+
+    const TArray& TJsonValue::get_array() const {
+        if (!is_array()) {
+            throw NError::TAccessError("Bad Access Error: Json is not array");
+        }
+        return *std::get<TArrayPtr>(root_value_);
+    }
+
+    const TObject& TJsonValue::get_object() const {
+        if (!is_object()) {
+            throw NError::TAccessError("Bad Access Error: Json is not  object");
+        }
+        return *std::get<TObjectPtr>(root_value_);
+    }
+
+    TJsonValue& TJsonValue::operator+=(const TString& value) {
+        get_string() += value;
+        return *this;
+    }
+
+    TJsonValue& TJsonValue::operator[](size_t index) {
+        return get_array()[index];
+    }
+    
+    const TJsonValue& TJsonValue::operator[](size_t index) const {
+        return get_array()[index];
+    }
+
+
+    TJsonValue& TJsonValue::at(size_t index) {
+        return get_array().at(index);
+    }
+    
+    const TJsonValue& TJsonValue::at(size_t index) const {
+        return get_array().at(index);    
+    }
+
+    TJsonValue& TJsonValue::operator[](const TString& key) {
+        return get_object()[key];
+    }
+        
+    TJsonValue& TJsonValue::at(const TString& key) {
+        return get_object().at(key);
+    }
+
+    const TJsonValue& TJsonValue::at(const TString& key) const {
+        return get_object().at(key);
+    }
+
+    bool TJsonValue::contains(const TString& key) const {
+        return get_object().contains(key);
     }
 
     void TJsonValue::clear() {

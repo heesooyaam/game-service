@@ -7,6 +7,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <variant>
 #include <vector>
@@ -219,6 +220,9 @@ namespace NJson {
         const TJsonValue& at(const TString&) const;
         
         bool contains(const TString&) const;
+
+        TJsonValue& get_value_by_path(std::string_view);
+        const TJsonValue& get_value_by_path(std::string_view) const;
 
         ~TJsonValue() = default;
 

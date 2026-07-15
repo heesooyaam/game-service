@@ -8,4 +8,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 enable_testing()
 
+add_subdirectory(library/common)
 add_subdirectory(library/json)
+add_subdirectory(library/game_core)

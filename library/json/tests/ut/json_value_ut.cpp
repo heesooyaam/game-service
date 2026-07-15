@@ -409,6 +409,61 @@ namespace NJson::NTests {
         }
         assert(access_error_thrown);
     }
+
+    void test_path_access() {
+        // Создаем сложную вложенную структуру:
+        // { "lol": { "kek": [ 10, 20, { "cheburek": "tasty" } ] } }
+        TObject obj_cheburek;
+        obj_cheburek["cheburek"] = "tasty";
+
+        TArray arr_kek;
+        arr_kek.emplace_back(10);
+        arr_kek.emplace_back(20);
+        arr_kek.emplace_back(std::move(obj_cheburek));
+
+        TObject obj_lol;
+        obj_lol["kek"] = std::move(arr_kek);
+
+        TObject root_obj;
+        root_obj["lol"] = std::move(obj_lol);
+
+        TJsonValue root(std::move(root_obj));
+
+        // 1. Успешное чтение (неконстантное)
+        assert(root.get_value_by_path("lol/kek/0").get_integer() == 10);
+        assert(root.get_value_by_path("lol/kek/2/cheburek").get_string() == "tasty");
+        
+        // 2. Успешное чтение (константное)
+        const TJsonValue const_root = root;
+        assert(const_root.get_value_by_path("lol/kek/1").get_integer() == 20);
+        assert(const_root.get_value_by_path("lol/kek/2/cheburek").get_string() == "tasty");
+
+        
+        // 3. Мутация по пути (запись нового значения)
+        root.get_value_by_path("lol/kek/2/cheburek") = "very tasty";
+        assert(root.get_value_by_path("lol/kek/2/cheburek").get_string() == "very tasty");
+        
+        
+        // 5. Проверка исключений
+        // Выход за пределы массива
+        bool thrown = false;
+        try { const_root.get_value_by_path("lol/kek/99"); } 
+        catch (const std::out_of_range&) { thrown = true; }
+        assert(thrown);
+
+        // Обращение к массиву по строковому ключу (который не конвертируется в число)
+        thrown = false;
+        try { const_root.get_value_by_path("lol/kek/not_a_number"); } 
+        catch (const NError::TAccessError&) { thrown = true; }
+        assert(thrown);
+
+        // Несуществующий ключ в константном объекте (at() бросает out_of_range)
+        thrown = false;
+        try { const_root.get_value_by_path("lol/non_existent"); } 
+        catch (const std::out_of_range&) { thrown = true; }
+        assert(thrown);
+        
+    }
     
 } // namespace NJson::NTests
 
@@ -433,6 +488,8 @@ int main() {
     test_math_operations();
     test_array_access();
     test_object_access();
+
+    test_path_access();
 
     std::cout << "All TJsonValue tests passed successfully! You are breathtaking!" << std::endl;
     return 0;

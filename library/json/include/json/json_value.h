@@ -1,5 +1,7 @@
 #pragma once
 
+#include "error.h"
+
 #include <concepts>
 #include <cstdint>
 #include <map>
@@ -10,6 +12,16 @@
 #include <vector>
 
 namespace NJson {
+
+    enum class EJsonType : uint8_t {
+        Null = 0,
+        Integer,
+        Double,
+        Boolean,
+        String,
+        Array,
+        Object
+    };
 
     class TJsonValue;
 
@@ -59,8 +71,8 @@ namespace NJson {
         {}
 
         template <CJsonDouble T>
-        TJsonValue(T float_number)
-            : root_value_(static_cast<TDouble>(float_number))
+        TJsonValue(T double_number)
+            : root_value_(static_cast<TDouble>(double_number))
         {}
 
         TJsonValue(TBoolean);
@@ -82,8 +94,8 @@ namespace NJson {
         }
 
         template <CJsonDouble T>
-        TJsonValue& operator=(T float_number) {
-            root_value_ = static_cast<TDouble>(float_number);
+        TJsonValue& operator=(T double_number) {
+            root_value_ = static_cast<TDouble>(double_number);
             return *this;
         }
 
@@ -103,11 +115,110 @@ namespace NJson {
         TJsonValue& operator=(const TJsonValue&);
         TJsonValue& operator=(TJsonValue&&) noexcept;
 
-        TStorage& get_root_value();
-        const TStorage& get_root_value() const;
+        EJsonType get_value_type() const;
+
+        bool is_null() const;
+        bool is_integer() const;
+        bool is_double() const;
+        bool is_boolean() const;
+        bool is_string() const;
+        bool is_array() const;
+        bool is_object() const;
 
         bool operator==(const TJsonValue&) const;
         bool operator!=(const TJsonValue&) const;
+
+        TInteger& get_integer();
+        TDouble& get_double();
+        TBoolean& get_boolean();
+        TString& get_string();
+        TArray& get_array();
+        TObject& get_object();
+
+        const TInteger& get_integer() const;
+        const TDouble& get_double() const;
+        const TBoolean& get_boolean() const;
+        const TString& get_string() const;
+        const TArray& get_array() const;
+        const TObject& get_object() const;
+
+        template <typename T>
+        requires CJsonInteger<T> || CJsonDouble<T>
+        TJsonValue& operator+=(T value) {
+            if (is_integer()) {
+                std::get<TInteger>(root_value_) += value;
+                return *this;
+            }
+
+            if (is_double()) {
+                std::get<TDouble>(root_value_) += value;
+                return *this;
+            }
+
+            throw NError::TAccessError("Bad Access Error: Json is not a number");
+        }
+
+        template <typename T>
+        requires CJsonInteger<T> || CJsonDouble<T>
+        TJsonValue& operator-=(T value) {
+            if (is_integer()) {
+                std::get<TInteger>(root_value_) -= value;
+                return *this;
+            }
+
+            if (is_double()) {
+                std::get<TDouble>(root_value_) -= value;
+                return *this;
+            }
+
+            throw NError::TAccessError("Bad Access Error: Json is not a number");
+        }
+
+        template <typename T>
+        requires CJsonInteger<T> || CJsonDouble<T>
+        TJsonValue& operator*=(T value) {
+            if (is_integer()) {
+                std::get<TInteger>(root_value_) *= value;
+                return *this;
+            }
+
+            if (is_double()) {
+                std::get<TDouble>(root_value_) *= value;
+                return *this;
+            }
+
+            throw NError::TAccessError("Bad Access Error: Json is not a number");
+        }
+
+        template <typename T>
+        requires CJsonInteger<T> || CJsonDouble<T>
+        TJsonValue& operator/=(T value) {
+            if (is_integer()) {
+                std::get<TInteger>(root_value_) /= value;
+                return *this;
+            }
+
+            if (is_double()) {
+                std::get<TDouble>(root_value_) /= value;
+                return *this;
+            }
+
+            throw NError::TAccessError("Bad Access Error: Json is not a number");
+        }
+
+        TJsonValue& operator+=(const TString&);
+
+        TJsonValue& operator[](size_t);
+        const TJsonValue& operator[](size_t) const;
+
+        TJsonValue& at(size_t);
+        const TJsonValue& at(size_t) const;
+        
+        TJsonValue& operator[](const TString&);
+        TJsonValue& at(const TString&);
+        const TJsonValue& at(const TString&) const;
+        
+        bool contains(const TString&) const;
 
         ~TJsonValue() = default;
 

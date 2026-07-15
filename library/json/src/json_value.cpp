@@ -3,6 +3,23 @@
 #include <json/json_value.h>
 
 #include <cassert>
+#include <cctype>
+
+namespace {
+
+    bool is_number(std::string_view data) {
+        if (data.empty()) {
+            return false;
+        }
+        for (auto symbol : data) {
+            if (!std::isdigit(symbol)) { 
+                return false;
+            }
+        }
+        return true;
+    }
+
+}
 
 namespace NJson {
 
@@ -253,7 +270,6 @@ namespace NJson {
         return get_array()[index];
     }
 
-
     TJsonValue& TJsonValue::at(size_t index) {
         return get_array().at(index);
     }
@@ -276,6 +292,60 @@ namespace NJson {
 
     bool TJsonValue::contains(const TString& key) const {
         return get_object().contains(key);
+    }
+
+    TJsonValue& TJsonValue::get_value_by_path(std::string_view path) {
+        std::vector<TString> split;
+
+        {
+            TString current;
+            for (auto symbol : path) {
+                if (symbol == '/') {
+                    split.push_back(std::move(current));
+                    current.clear();
+                } else {
+                    current += symbol;
+                }
+            }
+            split.push_back(std::move(current));
+        }
+
+        TJsonValue* ptr = this;
+        for (size_t i = 0; i < split.size(); ++i) {
+            if (is_number(split[i])) {
+                ptr = std::addressof(ptr->at(std::stoull(split[i])));
+            } else {
+                ptr = std::addressof(ptr->at(split[i]));
+            }
+        }
+        return *ptr;
+    }
+    
+    const TJsonValue& TJsonValue::get_value_by_path(std::string_view path) const {
+        std::vector<TString> split;
+
+        {
+            TString current;
+            for (auto symbol : path) {
+                if (symbol == '/') {
+                    split.push_back(std::move(current));
+                    current.clear();
+                } else {
+                    current += symbol;
+                }
+            }
+            split.push_back(std::move(current));
+        }
+
+        const TJsonValue* ptr = this;
+        for (size_t i = 0; i < split.size(); ++i) {
+            if (is_number(split[i])) {
+                ptr = std::addressof(ptr->at(std::stoull(split[i])));
+            } else {
+                ptr = std::addressof(ptr->at(split[i]));
+            }
+        }
+        return *ptr;
     }
 
     void TJsonValue::clear() {

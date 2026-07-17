@@ -1,7 +1,9 @@
 #pragma once
 
-#include "error.h"
+#include <common/enum/enum.h>
+#include <library/json/error.h>
 
+#include <array>
 #include <concepts>
 #include <cstdint>
 #include <map>
@@ -23,6 +25,18 @@ namespace NJson {
         Array,
         Object
     };
+
+    constexpr std::array<NEnum::TEnumEntry<EJsonType>, 7> get_enum_entries(std::type_identity<EJsonType>) {
+        return {{
+            {EJsonType::Null, "NULL"},
+            {EJsonType::Integer, "INTEGER"},
+            {EJsonType::Double, "DOUBLE"},
+            {EJsonType::Boolean, "BOOLEAN"},
+            {EJsonType::String, "STRING"},
+            {EJsonType::Array, "ARRAY"},
+            {EJsonType::Object, "OBJECT"}
+        }};
+    }
 
     class TJsonValue;
 
@@ -65,19 +79,15 @@ namespace NJson {
 
         TJsonValue() = default;
 
-        TJsonValue(TNull);
+        TJsonValue(TNull) noexcept;
 
         template <CJsonInteger T>
-        TJsonValue(T integer_number)
-            : root_value_(static_cast<TInteger>(integer_number))
-        {}
+        TJsonValue(T integer_number) noexcept;
 
         template <CJsonDouble T>
-        TJsonValue(T double_number)
-            : root_value_(static_cast<TDouble>(double_number))
-        {}
+        TJsonValue(T double_number) noexcept;
 
-        TJsonValue(TBoolean);
+        TJsonValue(TBoolean) noexcept;
         TJsonValue(TString&&);
         TJsonValue(TArray&&);
         TJsonValue(TObject&&);
@@ -87,21 +97,15 @@ namespace NJson {
 
         TJsonValue(const char*);
 
-        TJsonValue& operator=(TNull);
+        TJsonValue& operator=(TNull) noexcept;
 
         template <CJsonInteger T>
-        TJsonValue& operator=(T integer_number) {
-            root_value_ = static_cast<TInteger>(integer_number);
-            return *this;
-        }
+        TJsonValue& operator=(T integer_number) noexcept;
 
         template <CJsonDouble T>
-        TJsonValue& operator=(T double_number) {
-            root_value_ = static_cast<TDouble>(double_number);
-            return *this;
-        }
+        TJsonValue& operator=(T double_number) noexcept;
 
-        TJsonValue& operator=(TBoolean);
+        TJsonValue& operator=(TBoolean) noexcept;
         TJsonValue& operator=(TString&&);
         TJsonValue& operator=(TArray&&);
         TJsonValue& operator=(TObject&&);
@@ -117,15 +121,15 @@ namespace NJson {
         TJsonValue& operator=(const TJsonValue&);
         TJsonValue& operator=(TJsonValue&&) noexcept;
 
-        EJsonType get_value_type() const;
+        EJsonType get_value_type() const noexcept;
 
-        bool is_null() const;
-        bool is_integer() const;
-        bool is_double() const;
-        bool is_boolean() const;
-        bool is_string() const;
-        bool is_array() const;
-        bool is_object() const;
+        bool is_null() const noexcept;
+        bool is_integer() const noexcept;
+        bool is_double() const noexcept;
+        bool is_boolean() const noexcept;
+        bool is_string() const noexcept;
+        bool is_array() const noexcept;
+        bool is_object() const noexcept;
 
         bool operator==(const TJsonValue&) const;
         bool operator!=(const TJsonValue&) const;
@@ -144,65 +148,20 @@ namespace NJson {
         const TArray& get_array() const;
         const TObject& get_object() const;
 
-        template <CJsonNumber T>
-        TJsonValue& operator+=(T value) {
-            if (is_integer()) {
-                std::get<TInteger>(root_value_) += value;
-                return *this;
-            }
-
-            if (is_double()) {
-                std::get<TDouble>(root_value_) += value;
-                return *this;
-            }
-
-            throw NError::TAccessError("Bad Access Error: Json is not a number");
-        }
+        //for arrays
+        size_t size() const;
 
         template <CJsonNumber T>
-        TJsonValue& operator-=(T value) {
-            if (is_integer()) {
-                std::get<TInteger>(root_value_) -= value;
-                return *this;
-            }
-
-            if (is_double()) {
-                std::get<TDouble>(root_value_) -= value;
-                return *this;
-            }
-
-            throw NError::TAccessError("Bad Access Error: Json is not a number");
-        }
+        TJsonValue& operator+=(T value);
 
         template <CJsonNumber T>
-        TJsonValue& operator*=(T value) {
-            if (is_integer()) {
-                std::get<TInteger>(root_value_) *= value;
-                return *this;
-            }
-
-            if (is_double()) {
-                std::get<TDouble>(root_value_) *= value;
-                return *this;
-            }
-
-            throw NError::TAccessError("Bad Access Error: Json is not a number");
-        }
+        TJsonValue& operator-=(T value);
 
         template <CJsonNumber T>
-        TJsonValue& operator/=(T value) {
-            if (is_integer()) {
-                std::get<TInteger>(root_value_) /= value;
-                return *this;
-            }
+        TJsonValue& operator*=(T value);
 
-            if (is_double()) {
-                std::get<TDouble>(root_value_) /= value;
-                return *this;
-            }
-
-            throw NError::TAccessError("Bad Access Error: Json is not a number");
-        }
+        template <CJsonNumber T>
+        TJsonValue& operator/=(T value);
 
         TJsonValue& operator+=(const TString&);
 
@@ -232,6 +191,16 @@ namespace NJson {
         void clear();
         static TJsonValue deep_copy(const TJsonValue&);
         static bool deep_equality_check(const TJsonValue&, const TJsonValue&);
+
+        TArray& not_safe_get_array();
+        TObject& not_safe_get_object();
+        const TArray& not_safe_get_array() const;
+        const TObject& not_safe_get_object() const;
     };
 
 } //namespace NJson
+
+
+#define LIBRARY_JSON_VALUE_H
+#include <library/json/detail/json_value-inl.h>
+#undef LIBRARY_JSON_VALUE_H

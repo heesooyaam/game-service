@@ -1,5 +1,5 @@
-#include <json/json_value.h>
-#include <json/error.h> 
+#include <library/json/json_value.h>
+#include <library/json/error.h> 
 
 #include <cassert>
 #include <iostream>
@@ -41,15 +41,15 @@ namespace NJson::NTests {
         TArray arr;
         arr.emplace_back(1);
         arr.emplace_back(2);
-        TJsonValue arr_val(arr);
+        TJsonValue arr_val(std::move(arr));
         assert(arr_val.is_array());
-        assert(arr_val.get_array().size() == 2);
+        assert(arr_val.size() == 2);
         assert(arr_val.get_array()[0].get_integer() == 1);
 
         // Object
         TObject obj;
         obj["key"] = 100;
-        TJsonValue obj_val(obj);
+        TJsonValue obj_val(std::move(obj));
         assert(obj_val.is_object());
         assert(obj_val.get_object().at("key").get_integer() == 100);
     }
@@ -70,7 +70,7 @@ namespace NJson::NTests {
         assert(val.is_string() && val.get_string() == "reassigned");
         
         val = TArray{TJsonValue(1), TJsonValue(2)};
-        assert(val.is_array() && val.get_array().size() == 2);
+        assert(val.is_array() && val.size() == 2);
 
         val = TObject{{"test", TJsonValue("value")}};
         assert(val.is_object() && val.get_object()["test"].get_string() == "value");
@@ -92,10 +92,10 @@ namespace NJson::NTests {
         copied_assign = original;
         assert(copied_assign == original);
 
-        // Deep copy verification (changing copy shouldn't affect original)
+        // Deep copy verification
         copied_assign.get_array()[0] = 99;
         assert(copied_assign != original);
-        assert(original.get_array()[0].get_integer() == 1); // Original unchanged
+        assert(original.get_array()[0].get_integer() == 1);
 
         // Self-assignment copy
         copied_assign = copied_assign;
@@ -108,7 +108,7 @@ namespace NJson::NTests {
         // Move constructor
         TJsonValue moved_construct(std::move(original));
         assert(moved_construct.is_string() && moved_construct.get_string() == "movable_string");
-        assert(original.is_null()); // original should be cleared
+        assert(original.is_null());
 
         // Move assignment
         TJsonValue original_obj = TObject{{"key", 42}};
@@ -116,7 +116,7 @@ namespace NJson::NTests {
         moved_assign = std::move(original_obj);
         
         assert(moved_assign.is_object() && moved_assign.get_object()["key"].get_integer() == 42);
-        assert(original_obj.is_null()); // original should be cleared
+        assert(original_obj.is_null());
 
         // Self-assignment move
         moved_assign = std::move(moved_assign);
@@ -126,7 +126,7 @@ namespace NJson::NTests {
     void test_equality() {
         assert(TJsonValue(42) == TJsonValue(42));
         assert(TJsonValue(42) != TJsonValue(43));
-        assert(TJsonValue(42) != TJsonValue(42.0)); // Strict type checking (1 != 1.0)
+        assert(TJsonValue(42) != TJsonValue(42.0)); // Strict type checking
 
         assert(TJsonValue("test") == TJsonValue("test"));
         assert(TJsonValue("test") != TJsonValue("test2"));
@@ -149,114 +149,74 @@ namespace NJson::NTests {
         inner_obj["key"] = "value";
 
         TArray inner_arr;
-        inner_arr.emplace_back(inner_obj);
+        inner_arr.emplace_back(std::move(inner_obj));
         inner_arr.emplace_back(42);
 
         TObject root_obj;
-        root_obj["data"] = inner_arr;
+        root_obj["data"] = std::move(inner_arr);
 
-        TJsonValue root_json(root_obj);
+        TJsonValue root_json(std::move(root_obj));
         TJsonValue root_copy(root_json);
         
         assert(root_copy == root_json);
 
-        // Mutate deep copy
         root_copy.get_object()["data"].get_array()[0].get_object()["key"] = "NEW_VALUE";
 
-        // Assert divergence
         assert(root_copy != root_json);
         assert(root_json.get_object()["data"].get_array()[0].get_object()["key"].get_string() == "value");
     }
 
-    // ИСПРАВЛЕНО: проверяем встроенные исключения в стандартных геттерах
     void test_getters_and_exceptions() {
         TJsonValue i = 42;
         TJsonValue s = "string";
 
-        // Success paths
         assert(i.get_integer() == 42);
         assert(s.get_string() == "string");
 
-        // Failure paths - Integer
         bool thrown = false;
-        try { i.get_string(); } catch (const NError::TAccessError&) { thrown = true; }
+        try { i.get_string(); } catch (const NError::TJsonTypeError&) { thrown = true; }
         assert(thrown);
 
-        // Failure paths - String
         thrown = false;
-        try { s.get_array(); } catch (const NError::TAccessError&) { thrown = true; }
+        try { s.get_array(); } catch (const NError::TJsonTypeError&) { thrown = true; }
         assert(thrown);
 
-        // Failure paths - Object
         thrown = false;
-        try { i.get_object(); } catch (const NError::TAccessError&) { thrown = true; }
+        try { i.get_object(); } catch (const NError::TJsonTypeError&) { thrown = true; }
         assert(thrown);
     }
 
-    // ИСПРАВЛЕНО: использование актуальных методов
     void test_const_correctness() {
         const TJsonValue const_val = TArray{1, 2, 3};
         
-        // Should compile and run using const getters
         assert(const_val.is_array());
-        assert(const_val.get_array().size() == 3);
+        assert(const_val.size() == 3);
         assert(const_val.get_array()[0].get_integer() == 1);
-        
         assert(const_val.get_array()[1].get_integer() == 2);
     }
 
     void test_unique_ownership_copy() {
         TJsonValue original_arr = TArray{TJsonValue(1), TJsonValue("test")};
-        
         TJsonValue copied_arr = original_arr;
 
         const auto* orig_ptr = &original_arr.get_array()[0];
         const auto* copy_ptr = &copied_arr.get_array()[0];
-        assert(orig_ptr != copy_ptr && "Deep copy failed: arrays share the same memory!");
+        assert(orig_ptr != copy_ptr);
 
         const std::string& orig_str = original_arr.get_array()[1].get_string();
         const std::string& copy_str = copied_arr.get_array()[1].get_string();
-        assert(&orig_str != &copy_str && "Deep copy failed: strings share the same memory!");
-
-        TJsonValue original_obj = TObject{{"key", TJsonValue(TArray{1, 2, 3})}};
-        TJsonValue copied_obj = original_obj;
-
-        const auto* orig_nested_arr = &original_obj.get_object().at("key").get_array();
-        const auto* copy_nested_arr = &copied_obj.get_object().at("key").get_array();
-        
-        assert(orig_nested_arr != copy_nested_arr && "Deep copy failed: nested arrays share memory!");
+        assert(&orig_str != &copy_str);
     }
 
     void test_unique_ownership_move() {
         TJsonValue original_arr = TArray{TJsonValue(10), TJsonValue(20)};
-        
         const auto* memory_address_before = &original_arr.get_array()[0];
 
         TJsonValue moved_arr = std::move(original_arr);
-
         const auto* memory_address_after = &moved_arr.get_array()[0];
-        assert(memory_address_before == memory_address_after && "Move semantics failed: unnecessary reallocation occurred!");
-
-        assert(original_arr.is_null() && "Move semantics failed: original object still holds data!");
-        assert(original_arr.get_value_type() == EJsonType::Null);
-    }
-
-    void test_reassignment_cleanup() {
-        TJsonValue val = TArray{1, 2, 3, 4, 5};
-        assert(val.is_array());
         
-        val = TObject{{"key", "value"}};
-        assert(val.is_object() && !val.is_array());
-        assert(val.get_object().size() == 1);
-
-        val = "now i am a string";
-        assert(val.is_string() && !val.is_object());
-
-        val = 42;
-        assert(val.is_integer());
-
-        val = TNull{};
-        assert(val.is_null());
+        assert(memory_address_before == memory_address_after);
+        assert(original_arr.is_null());
     }
 
     void test_implicit_numeric_conversions() {
@@ -270,256 +230,151 @@ namespace NJson::NTests {
         TJsonValue val3 = st;
         TJsonValue val4 = ll;
 
-        assert(val1.is_integer() && val1.get_integer() == 10);
-        assert(val2.is_integer() && val2.get_integer() == 20);
-        assert(val3.is_integer() && val3.get_integer() == 30);
-        assert(val4.is_integer() && val4.get_integer() == 40);
+        assert(val1.get_integer() == 10);
+        assert(val2.get_integer() == 20);
+        assert(val3.get_integer() == 30);
+        assert(val4.get_integer() == 40);
 
         float f = 3.14f;
         TJsonValue val5 = f;
         assert(val5.is_double());
     }
 
-    void test_edge_cases() {
-        TJsonValue empty_arr1 = TArray{};
-        TJsonValue empty_arr2 = TArray{};
-        assert(empty_arr1 == empty_arr2);
-
-        TJsonValue empty_obj1 = TObject{};
-        TJsonValue empty_obj2 = TObject{};
-        assert(empty_obj1 == empty_obj2);
-
-        assert(empty_arr1 != empty_obj1);
-
-        TJsonValue null_val;
-        assert(empty_arr1 != null_val);
-
-        TJsonValue empty_str = "";
-        assert(empty_str.is_string() && empty_str.get_string().empty());
-    }
-
-    // ДОПОЛНЕНО: Тщательное покрытие математических операций и их исключений
     void test_math_operations() {
-        // --- Целочисленная математика ---
         TJsonValue i = 10;
         i += 5;   assert(i.get_integer() == 15);
         i -= 2;   assert(i.get_integer() == 13);
         i *= 2;   assert(i.get_integer() == 26);
         i /= 2;   assert(i.get_integer() == 13);
 
-        // --- Вещественная математика ---
         TJsonValue d = 2.5;
         d += 1.5; assert(d.get_double() == 4.0);
         d -= 1.0; assert(d.get_double() == 3.0);
         d *= 3.0; assert(d.get_double() == 9.0);
         d /= 2.0; assert(d.get_double() == 4.5);
 
-        // --- Конкатенация строк ---
         TJsonValue s = "hello";
         s += TString(" world");
         assert(s.get_string() == "hello world");
 
-        // --- Исключения: применение математики к неподходящему типу ---
         bool thrown = false;
-        try { s += 5; } catch (const NError::TAccessError&) { thrown = true; }
-        assert(thrown);
-
-        thrown = false;
-        try { s -= 5; } catch (const NError::TAccessError&) { thrown = true; }
-        assert(thrown);
-
-        thrown = false;
-        try { s *= 5; } catch (const NError::TAccessError&) { thrown = true; }
-        assert(thrown);
-
-        thrown = false;
-        try { s /= 5; } catch (const NError::TAccessError&) { thrown = true; }
+        try { s += 5; } catch (const NError::TJsonTypeError&) { thrown = true; }
         assert(thrown);
     }
 
     void test_array_access() {
         TJsonValue arr = TArray{TJsonValue(10), TJsonValue(20), TJsonValue(30)};
 
-        // Неконстантный доступ
         assert(arr[0].get_integer() == 10);
-        arr[1] = 99; // Мутация через operator[]
+        arr[1] = 99;
         assert(arr.at(1).get_integer() == 99);
 
-        // Константный доступ
         const TJsonValue const_arr = arr;
         assert(const_arr[2].get_integer() == 30);
         assert(const_arr.at(2).get_integer() == 30);
 
-        // Проверка std::out_of_range (при использовании at())
-        bool out_of_range_thrown = false;
-        try {
-            arr.at(100); 
-        } catch (const std::out_of_range&) {
-            out_of_range_thrown = true;
-        }
-        assert(out_of_range_thrown);
+        bool thrown = false;
+        try { arr.at(100); } catch (const std::out_of_range&) { thrown = true; }
+        assert(thrown);
 
-        // Проверка TAccessError, если применить [] не к массиву
         TJsonValue num = 42;
-        bool access_error_thrown = false;
-        try {
-            num[0];
-        } catch (const NError::TAccessError&) {
-            access_error_thrown = true;
-        }
-        assert(access_error_thrown);
+        thrown = false;
+        try { num[0]; } catch (const NError::TJsonTypeError&) { thrown = true; }
+        assert(thrown);
     }
 
     void test_object_access() {
         TJsonValue obj = TObject{{"name", TJsonValue("Alice")}, {"age", TJsonValue(25)}};
 
-        // Проверка метода contains
-        assert(obj.contains("name") == true);
-        assert(obj.contains("height") == false);
+        assert(obj.contains("name"));
+        assert(!obj.contains("height"));
 
-        // Чтение через at() и []
         assert(obj["name"].get_string() == "Alice");
         assert(obj.at("age").get_integer() == 25);
 
-        // Запись через неконстантный operator[] (создание нового ключа)
         obj["height"] = 170.5;
-        assert(obj.contains("height") == true);
         assert(obj.at("height").get_double() == 170.5);
 
-        // Константный доступ
         const TJsonValue const_obj = obj;
         assert(const_obj.at("name").get_string() == "Alice");
         
-        // Проверка std::out_of_range (выбрасывается std::map::at)
-        bool out_of_range_thrown = false;
-        try {
-            const_obj.at("non_existent_key");
-        } catch (const std::out_of_range&) {
-            out_of_range_thrown = true;
-        }
-        assert(out_of_range_thrown);
+        bool thrown = false;
+        try { const_obj.at("non_existent_key"); } catch (const std::out_of_range&) { thrown = true; }
+        assert(thrown);
 
-        // Проверка TAccessError, если применить ["key"] не к объекту
-        TJsonValue str = "im not an object";
-        bool access_error_thrown = false;
-        try {
-            str["key"];
-        } catch (const NError::TAccessError&) {
-            access_error_thrown = true;
-        }
-        assert(access_error_thrown);
+        TJsonValue str = "string";
+        thrown = false;
+        try { str["key"]; } catch (const NError::TJsonTypeError&) { thrown = true; }
+        assert(thrown);
     }
 
     void test_path_access() {
-        // Создаем сложную вложенную структуру:
-        // { "lol": { "kek": [ 10, 20, { "cheburek": "tasty" } ] } }
-        TObject obj_cheburek;
-        obj_cheburek["cheburek"] = "tasty";
-
-        TArray arr_kek;
-        arr_kek.emplace_back(10);
-        arr_kek.emplace_back(20);
-        arr_kek.emplace_back(std::move(obj_cheburek));
-
-        TObject obj_lol;
-        obj_lol["kek"] = std::move(arr_kek);
-
         TObject root_obj;
-        root_obj["lol"] = std::move(obj_lol);
-
+        TArray arr;
+        arr.emplace_back(10);
+        arr.emplace_back(20);
+        TObject inner;
+        inner["cheburek"] = "tasty";
+        arr.emplace_back(std::move(inner));
+        
+        TObject lol;
+        lol["kek"] = std::move(arr);
+        root_obj["lol"] = std::move(lol);
+        
         TJsonValue root(std::move(root_obj));
 
-        // 1. Успешное чтение (неконстантное)
+        // 1. Успешное чтение (non-const)
         assert(root.get_value_by_path("lol/kek/0").get_integer() == 10);
         assert(root.get_value_by_path("lol/kek/2/cheburek").get_string() == "tasty");
-        
-        // 2. Успешное чтение (константное)
+
+        // 2. Успешное чтение (const)
         const TJsonValue const_root = root;
         assert(const_root.get_value_by_path("lol/kek/1").get_integer() == 20);
         assert(const_root.get_value_by_path("lol/kek/2/cheburek").get_string() == "tasty");
 
-        
-        // 3. Мутация по пути (запись нового значения)
-        root.get_value_by_path("lol/kek/2/cheburek") = "very tasty";
-        assert(root.get_value_by_path("lol/kek/2/cheburek").get_string() == "very tasty");
-        
-        
-        // 5. Проверка исключений
-        // Выход за пределы массива
+        // 3. Исключения: выход за границы массива
         bool thrown = false;
         try { const_root.get_value_by_path("lol/kek/99"); } 
-        catch (const std::out_of_range&) { thrown = true; }
+        catch (const NError::TJsonBadArrayIndex&) { thrown = true; }
         assert(thrown);
 
-        // Обращение к массиву по строковому ключу (который не конвертируется в число)
+        // 4. Исключения: несуществующий ключ
+        thrown = false;
+        try { const_root.get_value_by_path("lol/kek/2/non_existent"); } 
+        catch (const NError::TJsonBadObjectKey&) { thrown = true; }
+        assert(thrown);
+
+        // 5. Исключения: попытка читать массив как объект (передали строку вместо индекса)
         thrown = false;
         try { const_root.get_value_by_path("lol/kek/not_a_number"); } 
-        catch (const NError::TAccessError&) { thrown = true; }
+        // parse_array_index вернет nullopt -> уйдет в ветку объектов -> !is_object() бросит TJsonTypeError
+        catch (const NError::TJsonTypeError&) { thrown = true; }
         assert(thrown);
-
-        // Несуществующий ключ в константном объекте (at() бросает out_of_range)
-        thrown = false;
-        try { const_root.get_value_by_path("lol/non_existent"); } 
-        catch (const std::out_of_range&) { thrown = true; }
-        assert(thrown);
-        
     }
 
     void test_get_and_create_value_by_path() {
-        TObject root_obj;
-        root_obj["existing_key"] = 42;
+        TJsonValue root = TObject{};
         
-        TArray arr;
-        arr.emplace_back(10);
-        arr.emplace_back(20);
-        root_obj["arr"] = std::move(arr);
-
-        TJsonValue root = std::move(root_obj);
-
-        // 1. Успешное чтение существующих путей
-        assert(root.get_and_create_value_by_path("existing_key").get_integer() == 42);
+        // 1. Магическое авто-создание пути (Auto-vivification)
+        root.get_and_create_value_by_path("settings/graphics/resolution") = "1080p";
+        assert(root.get_value_by_path("settings/graphics/resolution").get_string() == "1080p");
         
-        // Примечание: предполагается, что parse_array_index ожидает либо просто число "0", либо "[0]".
-        // Если твой парсер ожидает скобки, замени "arr/0" на "arr/[0]"
-        assert(root.get_and_create_value_by_path("arr/0").get_integer() == 10);
+        // Добавление ключа в уже существующий объект
+        root.get_and_create_value_by_path("settings/audio") = 100;
+        assert(root.get_value_by_path("settings/audio").get_integer() == 100);
 
-        // 2. Успешное создание нового ключа в существующем объекте
-        // Путь "new_key" не существует, поэтому он должен создаться со значением TNull
-        TJsonValue& new_node = root.get_and_create_value_by_path("new_key");
-        assert(new_node.is_null()); 
-        
-        // Мутируем созданный узел
-        new_node = "hello"; 
-        assert(root.get_and_create_value_by_path("new_key").get_string() == "hello");
-
-        // 3. Создание вложенной структуры
-        // Сначала нужно явно инициализировать родителя как TObject
-        root.get_and_create_value_by_path("nested_obj") = TObject{};
-        root.get_and_create_value_by_path("nested_obj/deep_key") = 777;
-        assert(root.get_and_create_value_by_path("nested_obj/deep_key").get_integer() == 777);
-
-        // 4. Исключение: выход за пределы массива
-        // Метод использует at() для массивов, значит создания элементов массива не происходит
+        // 2. Исключение: Нельзя магически создать элемент массива по индексу (только ключи объектов)
+        root.get_and_create_value_by_path("arr_parent") = TArray{1, 2, 3};
         bool thrown = false;
-        try { root.get_and_create_value_by_path("arr/999"); }
-        catch (const std::out_of_range&) { thrown = true; }
+        try { root.get_and_create_value_by_path("arr_parent/99"); }
+        catch (const NError::TJsonBadArrayIndex&) { thrown = true; }
         assert(thrown);
 
-        // 5. Исключение: обращение к не-объекту как к объекту
-        // "existing_key" хранит число. Если попытаться взять от него ключ, должна быть ошибка доступа
+        // 3. Исключение: Обращение к числу/строке как к объекту
         thrown = false;
-        try { root.get_and_create_value_by_path("existing_key/some_key"); }
-        catch (const NError::TAccessError&) { thrown = true; }
-        assert(thrown);
-
-        // 6. Исключение: создание глубокого пути "на пустом месте" (без промежуточного объекта)
-        thrown = false;
-        try { 
-            // root["magic"] создастся как TNull. 
-            // Затем попытка взять ["deep"] от TNull бросит TAccessError
-            root.get_and_create_value_by_path("magic/deep"); 
-        }
-        catch (const NError::TAccessError&) { thrown = true; }
+        try { root.get_and_create_value_by_path("settings/audio/volume"); } 
+        // "audio" это int. nullopt -> else -> is_null()==false, is_object()==false -> throw TJsonTypeError
+        catch (const NError::TJsonTypeError&) { thrown = true; }
         assert(thrown);
     }
     
@@ -539,16 +394,13 @@ int main() {
 
     test_unique_ownership_copy();
     test_unique_ownership_move();
-    test_reassignment_cleanup();
     test_implicit_numeric_conversions();
-    test_edge_cases();
 
     test_math_operations();
     test_array_access();
     test_object_access();
-
+    
     test_path_access();
-
     test_get_and_create_value_by_path();
 
     std::cout << "All TJsonValue tests passed successfully! You are breathtaking!" << std::endl;

@@ -1,12 +1,15 @@
+#include <common/enum/enum.h>
 #include <common/overload.h>
-#include <json/error.h>
-#include <json/json_value.h>
+#include <library/json/error.h>
+#include <library/json/json_value.h>
 
+#include <array>
 #include <cassert>
 #include <cctype>
 #include <charconv>
 #include <system_error>
 #include <optional>
+#include <format>
 
 namespace {
 
@@ -38,35 +41,15 @@ namespace {
         return index;
     }
 
-
-    std::vector<NJson::TString> split_path(std::string_view path) {
-
-        std::vector<NJson::TString> data;
-        NJson::TString current;
-
-        for (auto symbol : path) {
-            if (symbol == '/') {
-                data.push_back(std::move(current));
-                current.clear();
-            } else {
-                current += symbol;
-            }
-        }
-
-        data.push_back(std::move(current));
-
-        return data;
-    }
-
 }
 
 namespace NJson {
 
-    TJsonValue::TJsonValue(TNull null) 
+    TJsonValue::TJsonValue(TNull null) noexcept
         : root_value_(null)
     {}
 
-    TJsonValue::TJsonValue(TBoolean boolean) 
+    TJsonValue::TJsonValue(TBoolean boolean) noexcept
         : root_value_(boolean)
     {}
 
@@ -98,12 +81,12 @@ namespace NJson {
         : root_value_(TString(cstr)) 
     {}
     
-    TJsonValue& TJsonValue::operator=(TNull null) {
+    TJsonValue& TJsonValue::operator=(TNull null) noexcept {
         root_value_ = null;
         return *this;
     }
 
-    TJsonValue& TJsonValue::operator=(TBoolean boolean) {
+    TJsonValue& TJsonValue::operator=(TBoolean boolean) noexcept {
         root_value_ = boolean;
         return *this;
     }
@@ -172,35 +155,35 @@ namespace NJson {
         return *this;
     }
 
-    EJsonType TJsonValue::get_value_type() const {
+    EJsonType TJsonValue::get_value_type() const noexcept {
         return static_cast<EJsonType>(root_value_.index());
     }
 
-    bool TJsonValue::is_null() const {
+    bool TJsonValue::is_null() const noexcept {
         return std::holds_alternative<TNull>(root_value_);
     }
 
-    bool TJsonValue::is_integer() const {
+    bool TJsonValue::is_integer() const noexcept {
         return std::holds_alternative<TInteger>(root_value_);
     }
 
-    bool TJsonValue::is_double() const {
+    bool TJsonValue::is_double() const noexcept {
         return std::holds_alternative<TDouble>(root_value_);
     }
 
-    bool TJsonValue::is_boolean() const {
+    bool TJsonValue::is_boolean() const noexcept {
         return std::holds_alternative<TBoolean>(root_value_);
     }
 
-    bool TJsonValue::is_string() const {
+    bool TJsonValue::is_string() const noexcept {
         return std::holds_alternative<TString>(root_value_);
     }
 
-    bool TJsonValue::is_array() const {
+    bool TJsonValue::is_array() const noexcept {
         return std::holds_alternative<TArrayPtr>(root_value_);
     }
 
-    bool TJsonValue::is_object() const {
+    bool TJsonValue::is_object() const noexcept {
         return std::holds_alternative<TObjectPtr>(root_value_);
     }
 
@@ -214,86 +197,126 @@ namespace NJson {
 
     TInteger& TJsonValue::get_integer() {
         if (!is_integer()) {
-            throw NError::TAccessError("Bad Access Error: Json is not integer");
+            auto actual_type = NEnum::enum_to_string(get_value_type()).value_or("UNKNOWN");
+        
+            throw NError::TJsonTypeError(
+                std::format("[BAD ACCESS ERROR]: Expected INTEGER, but got {}", actual_type)
+            );
         }
         return std::get<TInteger>(root_value_);
     }
 
     TDouble& TJsonValue::get_double() {
         if (!is_double()) {
-            throw NError::TAccessError("Bad Access Error: Json is not double");
+            auto actual_type = NEnum::enum_to_string(get_value_type()).value_or("UNKNOWN");
+        
+            throw NError::TJsonTypeError(
+                std::format("[BAD ACCESS ERROR]: Expected DOUBLE, but got {}", actual_type)
+            );
         }
         return std::get<TDouble>(root_value_);
     }
 
     TBoolean& TJsonValue::get_boolean() {
         if (!is_boolean()) {
-            throw NError::TAccessError("Bad Access Error: Json is not boolean");
+            auto actual_type = NEnum::enum_to_string(get_value_type()).value_or("UNKNOWN");
+        
+            throw NError::TJsonTypeError(
+                std::format("[BAD ACCESS ERROR]: Expected BOOLEAN, but got {}", actual_type)
+            );
         }
         return std::get<TBoolean>(root_value_);
     }
 
     TString& TJsonValue::get_string() {
         if (!is_string()) {
-            throw NError::TAccessError("Bad Access Error: Json is not string");
+            auto actual_type = NEnum::enum_to_string(get_value_type()).value_or("UNKNOWN");
+        
+            throw NError::TJsonTypeError(
+                std::format("[BAD ACCESS ERROR]: Expected STRING, but got {}", actual_type)
+            );
         }
         return std::get<TString>(root_value_);
     }
 
     TArray& TJsonValue::get_array() {
         if (!is_array()) {
-            throw NError::TAccessError("Bad Access Error: Json is not array");
+            auto actual_type = NEnum::enum_to_string(get_value_type()).value_or("UNKNOWN");
+        
+            throw NError::TJsonTypeError(
+                std::format("[BAD ACCESS ERROR]: Expected ARRAY, but got {}", actual_type)
+            );
         }
         return *std::get<TArrayPtr>(root_value_);
     }
 
     TObject& TJsonValue::get_object() {
         if (!is_object()) {
-            throw NError::TAccessError("Bad Access Error: Json is not  object");
+            auto actual_type = NEnum::enum_to_string(get_value_type()).value_or("UNKNOWN");
+        
+            throw NError::TJsonTypeError(
+                std::format("[BAD ACCESS ERROR]: Expected OBJECT, but got {}", actual_type)
+            );
         }
         return *std::get<TObjectPtr>(root_value_);
     }
 
     const TInteger& TJsonValue::get_integer() const {
         if (!is_integer()) {
-            throw NError::TAccessError("Bad Access Error: Json is not integer");
+            auto actual_type = NEnum::enum_to_string(get_value_type()).value_or("UNKNOWN");
+        
+            throw NError::TJsonTypeError(
+                std::format("[BAD ACCESS ERROR]: Expected INTEGER, but got {}", actual_type)
+            );
         }
         return std::get<TInteger>(root_value_);
     }
 
     const TDouble& TJsonValue::get_double() const {
         if (!is_double()) {
-            throw NError::TAccessError("Bad Access Error: Json is not double");
+            auto actual_type = NEnum::enum_to_string(get_value_type()).value_or("UNKNOWN");
+        
+            throw NError::TJsonTypeError(
+                std::format("[BAD ACCESS ERROR]: Expected DOUBLE, but got {}", actual_type)
+            );
         }
         return std::get<TDouble>(root_value_);
     }
 
     const TBoolean& TJsonValue::get_boolean() const {
         if (!is_boolean()) {
-            throw NError::TAccessError("Bad Access Error: Json is not boolean");
+            auto actual_type = NEnum::enum_to_string(get_value_type()).value_or("UNKNOWN");
+        
+            throw NError::TJsonTypeError(
+                std::format("[BAD ACCESS ERROR]: Expected BOOLEAN, but got {}", actual_type)
+            );
         }
         return std::get<TBoolean>(root_value_);
     }
 
     const TString& TJsonValue::get_string() const {
         if (!is_string()) {
-            throw NError::TAccessError("Bad Access Error: Json is not string");
+            throw NError::TJsonTypeError("[BAD ACCESS ERROR]: Json is not string");
         }
         return std::get<TString>(root_value_);
     }
 
     const TArray& TJsonValue::get_array() const {
         if (!is_array()) {
-            throw NError::TAccessError("Bad Access Error: Json is not array");
+            throw NError::TJsonTypeError("[BAD ACCESS ERROR]: Json is not array");
         }
         return *std::get<TArrayPtr>(root_value_);
     }
 
     const TObject& TJsonValue::get_object() const {
         if (!is_object()) {
-            throw NError::TAccessError("Bad Access Error: Json is not  object");
+            throw NError::TJsonTypeError("[BAD ACCESS ERROR]: Json is not object");
         }
         return *std::get<TObjectPtr>(root_value_);
+    }
+
+    size_t TJsonValue::size() const {
+        return get_array().size();
     }
 
     TJsonValue& TJsonValue::operator+=(const TString& value) {
@@ -334,54 +357,180 @@ namespace NJson {
     }
 
     TJsonValue& TJsonValue::get_and_create_value_by_path(std::string_view path) {
-        const std::vector<TString> result = split_path(path);
-
         TJsonValue* ptr = this;
-        for (size_t i = 0; i < result.size(); ++i) {
+        size_t start = 0;
 
-            std::optional<size_t> res = parse_array_index(result[i]);
+        while (start <= path.size()) {
 
-            if (res.has_value()) {
-                ptr = std::addressof(ptr->at(res.value()));
+            size_t end = path.find('/', start);
+
+            TString current;
+
+            if (end == std::string_view::npos) {
+                current = path.substr(start);
             } else {
-                ptr = std::addressof((*ptr)[result[i]]);
+                current = path.substr(start, end - start);
             }
+
+            std::optional<size_t> opt_index = parse_array_index(current);
+
+            if (opt_index.has_value()) {
+
+                const size_t index = opt_index.value();
+                
+                if (!ptr->is_array()) {
+                    throw NError::TJsonTypeError("[BAD ACCESS ERROR]: Json is not array");
+                }
+
+                TArray& ref_array = ptr->not_safe_get_array();
+
+                if (index >= ref_array.size()) {
+                    throw NError::TJsonBadArrayIndex(std::format("[BAD ARRAY INDEX]: array size = {}, index = {}", ref_array.size(), index));
+                }
+
+                ptr = std::addressof(ref_array[index]);
+
+            } else {
+
+                if (ptr->is_null()) {
+                    *ptr = TObject();
+                }
+
+                if (!ptr->is_object()) {
+                    throw NError::TJsonTypeError("[BAD ACCESS ERROR]: Json is not object");
+                }
+                
+                TObject& ref_object = ptr->not_safe_get_object();
+                ptr = std::addressof(ref_object[current]);
+            }
+
+            if (end == std::string_view::npos) {
+                break;
+            }
+
+            start = end + 1;
         }
+
         return *ptr;
     }
 
     TJsonValue& TJsonValue::get_value_by_path(std::string_view path) {
         
-        const std::vector<TString> result = split_path(path);
-
         TJsonValue* ptr = this;
-        for (size_t i = 0; i < result.size(); ++i) {
+        size_t start = 0;
 
-            std::optional<size_t> res = parse_array_index(result[i]);
+        while (start <= path.size()) {
 
-            if (res.has_value()) {
-                ptr = std::addressof(ptr->at(res.value()));
+            size_t end = path.find('/', start);
+
+            TString current;
+
+            if (end == std::string_view::npos) {
+                current = path.substr(start);
             } else {
-                ptr = std::addressof(ptr->at(result[i]));
+                current = path.substr(start, end - start);
             }
+
+            std::optional<size_t> opt_index = parse_array_index(current);
+
+            if (opt_index.has_value()) {
+
+                const size_t index = opt_index.value();
+                
+                if (!ptr->is_array()) {
+                    throw NError::TJsonTypeError("[BAD ACCESS ERROR]: Json is not array");
+                }
+
+                TArray& ref_array = ptr->not_safe_get_array();
+
+                if (index >= ref_array.size()) {
+                    throw NError::TJsonBadArrayIndex(std::format("[BAD ARRAY INDEX]: array size = {}, index = {}", ref_array.size(), index));
+                }
+
+                ptr = std::addressof(ref_array[index]);
+
+            } else {
+
+                if (!ptr->is_object()) {
+                    throw NError::TJsonTypeError("[BAD ACCESS ERROR]: Json is not object");
+                }
+                
+                TObject& ref_object = ptr->not_safe_get_object();
+                auto iter = ref_object.find(current);
+
+                if (iter == ref_object.end()) {
+                    throw NError::TJsonBadObjectKey(std::format("[BAD OBJECT KEY]: {}", current));
+                }
+
+                ptr = std::addressof(iter->second);
+            }
+
+            if (end == std::string_view::npos) {
+                break;
+            }
+
+            start = end + 1;
         }
+
         return *ptr;
     }
     
     const TJsonValue& TJsonValue::get_value_by_path(std::string_view path) const {
 
-        const std::vector<TString> result = split_path(path);
-
         const TJsonValue* ptr = this;
-        for (size_t i = 0; i < result.size(); ++i) {
 
-            std::optional<size_t> res = parse_array_index(result[i]);
+       size_t start = 0;
 
-            if (res.has_value()) {
-                ptr = std::addressof(ptr->at(res.value()));
+        while (start <= path.size()) {
+
+            size_t end = path.find('/', start);
+
+            TString current;
+
+            if (end == std::string_view::npos) {
+                current = path.substr(start);
             } else {
-                ptr = std::addressof(ptr->at(result[i]));
+                current = path.substr(start, end - start);
             }
+
+            std::optional<size_t> opt_index = parse_array_index(current);
+
+            if (opt_index.has_value()) {
+
+                const size_t index = opt_index.value();
+                
+                if (!ptr->is_array()) {
+                    throw NError::TJsonTypeError("[BAD ACCESS ERROR]: Json is not array");
+                }
+
+                const TArray& cref_array = ptr->not_safe_get_array();
+
+                if (index >= cref_array.size()) {
+                    throw NError::TJsonBadArrayIndex(std::format("[BAD ARRAY INDEX]: array size = {}, index = {}", cref_array.size(), index));
+                }
+
+                ptr = std::addressof(cref_array[index]);
+
+            } else {
+
+                if (!ptr->is_object()) {
+                    throw NError::TJsonTypeError("[BAD ACCESS ERROR]: Json is not object");
+                }
+                
+                const TObject& cref_object = ptr->not_safe_get_object();
+                auto iter = cref_object.find(current);
+
+                if (iter == cref_object.end()) {
+                    throw NError::TJsonBadObjectKey(std::format("[BAD OBJECT KEY]: {}", current));
+                }
+                ptr = std::addressof(iter->second);
+            }
+
+            if (end == std::string_view::npos) {
+                break;
+            }
+
+            start = end + 1;
         }
         return *ptr;
     }
@@ -420,7 +569,7 @@ namespace NJson {
             other.root_value_
         );
     }
-
+    
     bool TJsonValue::deep_equality_check(const TJsonValue& lhs, const TJsonValue& rhs) {
         return std::visit(
             NCommon::TOverloaded{
@@ -444,6 +593,23 @@ namespace NJson {
             lhs.root_value_,
             rhs.root_value_
         );
+    }
+
+
+    TArray& TJsonValue::not_safe_get_array() {
+        return *std::get<TArrayPtr>(root_value_);
+    }
+
+    TObject& TJsonValue::not_safe_get_object() {
+        return *std::get<TObjectPtr>(root_value_);
+    }
+
+    const TArray& TJsonValue::not_safe_get_array() const {
+        return *std::get<TArrayPtr>(root_value_);
+    }
+
+    const TObject& TJsonValue::not_safe_get_object() const {
+        return *std::get<TObjectPtr>(root_value_);
     }
 
 } //namespace NJson

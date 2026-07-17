@@ -8,8 +8,8 @@ target_include_directories(json_value
 )
 
 target_link_libraries(json_value
-    PRIVATE
-        game_common
+    PUBLIC
+        common
 )
 
 add_subdirectory(tests/ut)

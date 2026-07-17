@@ -37,8 +37,6 @@ namespace NJson {
     using TArrayPtr = std::unique_ptr<TArray>;
     using TObjectPtr = std::unique_ptr<TObject>;
 
-    using TStorage = std::variant<TNull, TInteger, TDouble, TBoolean, TString, TArrayPtr, TObjectPtr>;
-
     template <typename T>
     concept CCharacter =
         std::same_as<std::remove_cvref_t<T>, char> ||
@@ -58,6 +56,9 @@ namespace NJson {
     template <typename T>
     concept CJsonDouble =
         std::floating_point<std::remove_cvref_t<T>>;
+
+    template <typename T>
+    concept CJsonNumber = CJsonInteger<T> || CJsonDouble<T>;
 
     class TJsonValue {
     public:
@@ -143,8 +144,7 @@ namespace NJson {
         const TArray& get_array() const;
         const TObject& get_object() const;
 
-        template <typename T>
-        requires CJsonInteger<T> || CJsonDouble<T>
+        template <CJsonNumber T>
         TJsonValue& operator+=(T value) {
             if (is_integer()) {
                 std::get<TInteger>(root_value_) += value;
@@ -159,8 +159,7 @@ namespace NJson {
             throw NError::TAccessError("Bad Access Error: Json is not a number");
         }
 
-        template <typename T>
-        requires CJsonInteger<T> || CJsonDouble<T>
+        template <CJsonNumber T>
         TJsonValue& operator-=(T value) {
             if (is_integer()) {
                 std::get<TInteger>(root_value_) -= value;
@@ -175,8 +174,7 @@ namespace NJson {
             throw NError::TAccessError("Bad Access Error: Json is not a number");
         }
 
-        template <typename T>
-        requires CJsonInteger<T> || CJsonDouble<T>
+        template <CJsonNumber T>
         TJsonValue& operator*=(T value) {
             if (is_integer()) {
                 std::get<TInteger>(root_value_) *= value;
@@ -191,8 +189,7 @@ namespace NJson {
             throw NError::TAccessError("Bad Access Error: Json is not a number");
         }
 
-        template <typename T>
-        requires CJsonInteger<T> || CJsonDouble<T>
+        template <CJsonNumber T>
         TJsonValue& operator/=(T value) {
             if (is_integer()) {
                 std::get<TInteger>(root_value_) /= value;
@@ -221,12 +218,15 @@ namespace NJson {
         
         bool contains(const TString&) const;
 
+        TJsonValue& get_and_create_value_by_path(std::string_view);
+
         TJsonValue& get_value_by_path(std::string_view);
         const TJsonValue& get_value_by_path(std::string_view) const;
 
-        ~TJsonValue() = default;
-
     private:
+
+        using TStorage = std::variant<TNull, TInteger, TDouble, TBoolean, TString, TArrayPtr, TObjectPtr>;
+
         TStorage root_value_ = std::monostate();
 
         void clear();

@@ -1,22 +1,61 @@
-#include <game/common/overload.h>
+#include <common/overload.h>
 #include <json/error.h>
 #include <json/json_value.h>
 
 #include <cassert>
 #include <cctype>
+#include <charconv>
+#include <system_error>
+#include <optional>
 
 namespace {
 
-    bool is_number(std::string_view data) {
+    std::optional<size_t> parse_array_index(std::string_view data) noexcept {
+
         if (data.empty()) {
-            return false;
+            return std::nullopt;
         }
-        for (auto symbol : data) {
-            if (!std::isdigit(symbol)) { 
-                return false;
+
+        if (data.size() > 1 && data.front() == '0') {
+            return std::nullopt;
+        }
+
+        size_t index = 0;
+
+        const auto [ptr, error] = std::from_chars(
+            data.data(),
+            data.data() + data.size(),
+            index
+        );
+
+        if (
+            error != std::errc{} ||
+            ptr != data.data() + data.size()
+        ) {
+            return std::nullopt;
+        }
+
+        return index;
+    }
+
+
+    std::vector<NJson::TString> split_path(std::string_view path) {
+
+        std::vector<NJson::TString> data;
+        NJson::TString current;
+
+        for (auto symbol : path) {
+            if (symbol == '/') {
+                data.push_back(std::move(current));
+                current.clear();
+            } else {
+                current += symbol;
             }
         }
-        return true;
+
+        data.push_back(std::move(current));
+
+        return data;
     }
 
 }
@@ -294,55 +333,54 @@ namespace NJson {
         return get_object().contains(key);
     }
 
-    TJsonValue& TJsonValue::get_value_by_path(std::string_view path) {
-        std::vector<TString> split;
-
-        {
-            TString current;
-            for (auto symbol : path) {
-                if (symbol == '/') {
-                    split.push_back(std::move(current));
-                    current.clear();
-                } else {
-                    current += symbol;
-                }
-            }
-            split.push_back(std::move(current));
-        }
+    TJsonValue& TJsonValue::get_and_create_value_by_path(std::string_view path) {
+        const std::vector<TString> result = split_path(path);
 
         TJsonValue* ptr = this;
-        for (size_t i = 0; i < split.size(); ++i) {
-            if (is_number(split[i])) {
-                ptr = std::addressof(ptr->at(std::stoull(split[i])));
+        for (size_t i = 0; i < result.size(); ++i) {
+
+            std::optional<size_t> res = parse_array_index(result[i]);
+
+            if (res.has_value()) {
+                ptr = std::addressof(ptr->at(res.value()));
             } else {
-                ptr = std::addressof(ptr->at(split[i]));
+                ptr = std::addressof((*ptr)[result[i]]);
+            }
+        }
+        return *ptr;
+    }
+
+    TJsonValue& TJsonValue::get_value_by_path(std::string_view path) {
+        
+        const std::vector<TString> result = split_path(path);
+
+        TJsonValue* ptr = this;
+        for (size_t i = 0; i < result.size(); ++i) {
+
+            std::optional<size_t> res = parse_array_index(result[i]);
+
+            if (res.has_value()) {
+                ptr = std::addressof(ptr->at(res.value()));
+            } else {
+                ptr = std::addressof(ptr->at(result[i]));
             }
         }
         return *ptr;
     }
     
     const TJsonValue& TJsonValue::get_value_by_path(std::string_view path) const {
-        std::vector<TString> split;
 
-        {
-            TString current;
-            for (auto symbol : path) {
-                if (symbol == '/') {
-                    split.push_back(std::move(current));
-                    current.clear();
-                } else {
-                    current += symbol;
-                }
-            }
-            split.push_back(std::move(current));
-        }
+        const std::vector<TString> result = split_path(path);
 
         const TJsonValue* ptr = this;
-        for (size_t i = 0; i < split.size(); ++i) {
-            if (is_number(split[i])) {
-                ptr = std::addressof(ptr->at(std::stoull(split[i])));
+        for (size_t i = 0; i < result.size(); ++i) {
+
+            std::optional<size_t> res = parse_array_index(result[i]);
+
+            if (res.has_value()) {
+                ptr = std::addressof(ptr->at(res.value()));
             } else {
-                ptr = std::addressof(ptr->at(split[i]));
+                ptr = std::addressof(ptr->at(result[i]));
             }
         }
         return *ptr;
@@ -354,7 +392,7 @@ namespace NJson {
 
     TJsonValue TJsonValue::deep_copy(const TJsonValue& other) {
         return std::visit(
-            NCommon::TOverload{
+            NCommon::TOverloaded{
                 [](const TNull&) { 
                     return TJsonValue(); 
                 },
@@ -385,7 +423,7 @@ namespace NJson {
 
     bool TJsonValue::deep_equality_check(const TJsonValue& lhs, const TJsonValue& rhs) {
         return std::visit(
-            NCommon::TOverload{
+            NCommon::TOverloaded{
                 [](const TArrayPtr& lhs_ptr, const TArrayPtr& rhs_ptr) {
                     assert(lhs_ptr);
                     assert(rhs_ptr);

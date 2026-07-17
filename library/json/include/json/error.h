@@ -19,5 +19,5 @@ namespace NJson::NError {
             : std::runtime_error(msg) 
         {} 
     };  
-    
+        
 } // namespace NJson::NError

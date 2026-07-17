@@ -1,4 +1,4 @@
-#include <game/common/version.h>
+#include <common/version.h>
 
 namespace game::common {
 

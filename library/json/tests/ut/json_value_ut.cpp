@@ -464,6 +464,64 @@ namespace NJson::NTests {
         assert(thrown);
         
     }
+
+    void test_get_and_create_value_by_path() {
+        TObject root_obj;
+        root_obj["existing_key"] = 42;
+        
+        TArray arr;
+        arr.emplace_back(10);
+        arr.emplace_back(20);
+        root_obj["arr"] = std::move(arr);
+
+        TJsonValue root = std::move(root_obj);
+
+        // 1. Успешное чтение существующих путей
+        assert(root.get_and_create_value_by_path("existing_key").get_integer() == 42);
+        
+        // Примечание: предполагается, что parse_array_index ожидает либо просто число "0", либо "[0]".
+        // Если твой парсер ожидает скобки, замени "arr/0" на "arr/[0]"
+        assert(root.get_and_create_value_by_path("arr/0").get_integer() == 10);
+
+        // 2. Успешное создание нового ключа в существующем объекте
+        // Путь "new_key" не существует, поэтому он должен создаться со значением TNull
+        TJsonValue& new_node = root.get_and_create_value_by_path("new_key");
+        assert(new_node.is_null()); 
+        
+        // Мутируем созданный узел
+        new_node = "hello"; 
+        assert(root.get_and_create_value_by_path("new_key").get_string() == "hello");
+
+        // 3. Создание вложенной структуры
+        // Сначала нужно явно инициализировать родителя как TObject
+        root.get_and_create_value_by_path("nested_obj") = TObject{};
+        root.get_and_create_value_by_path("nested_obj/deep_key") = 777;
+        assert(root.get_and_create_value_by_path("nested_obj/deep_key").get_integer() == 777);
+
+        // 4. Исключение: выход за пределы массива
+        // Метод использует at() для массивов, значит создания элементов массива не происходит
+        bool thrown = false;
+        try { root.get_and_create_value_by_path("arr/999"); }
+        catch (const std::out_of_range&) { thrown = true; }
+        assert(thrown);
+
+        // 5. Исключение: обращение к не-объекту как к объекту
+        // "existing_key" хранит число. Если попытаться взять от него ключ, должна быть ошибка доступа
+        thrown = false;
+        try { root.get_and_create_value_by_path("existing_key/some_key"); }
+        catch (const NError::TAccessError&) { thrown = true; }
+        assert(thrown);
+
+        // 6. Исключение: создание глубокого пути "на пустом месте" (без промежуточного объекта)
+        thrown = false;
+        try { 
+            // root["magic"] создастся как TNull. 
+            // Затем попытка взять ["deep"] от TNull бросит TAccessError
+            root.get_and_create_value_by_path("magic/deep"); 
+        }
+        catch (const NError::TAccessError&) { thrown = true; }
+        assert(thrown);
+    }
     
 } // namespace NJson::NTests
 
@@ -490,6 +548,8 @@ int main() {
     test_object_access();
 
     test_path_access();
+
+    test_get_and_create_value_by_path();
 
     std::cout << "All TJsonValue tests passed successfully! You are breathtaking!" << std::endl;
     return 0;

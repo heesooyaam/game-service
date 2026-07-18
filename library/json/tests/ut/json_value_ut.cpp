@@ -377,6 +377,140 @@ namespace NJson::NTests {
         catch (const NError::TJsonTypeError&) { thrown = true; }
         assert(thrown);
     }
+
+
+    void test_exception_text() {
+        TJsonValue json = TObject{};
+        json.get_and_create_value_by_path("settings/audio/volume") = 100;
+        
+        // Создаем константную ссылку для проверок const-методов
+        const TJsonValue& const_json = json;
+
+        // =====================================================================
+        // 1. Проверка TJsonBadObjectKey
+        // =====================================================================
+        
+        bool thrown = false;
+        try {
+            auto value = json.get_value_by_path("settings/volume");
+        } catch (const NError::TJsonBadObjectKey& exp) {
+            thrown = true;
+            assert(std::string_view(exp.what()) == "[BAD OBJECT KEY]: volume");
+        }
+        assert(thrown);
+
+        thrown = false;
+        try {
+            auto value = const_json.get_value_by_path("settings/volume");
+        } catch (const NError::TJsonBadObjectKey& exp) {
+            thrown = true;
+            assert(std::string_view(exp.what()) == "[BAD OBJECT KEY]: volume");
+        }
+        assert(thrown);
+
+
+        // =====================================================================
+        // 2. Проверка TJsonTypeError (Ожидали Array, получили Object)
+        // =====================================================================
+        
+        thrown = false;
+        try {
+            // "settings" это объект, но мы обращаемся к нему по индексу "0"
+            auto value = json.get_value_by_path("settings/0");
+        } catch (const NError::TJsonTypeError& exp) {
+            thrown = true;
+            assert(std::string_view(exp.what()) == "[BAD ACCESS ERROR]: Expected ARRAY, but got OBJECT");
+        }
+        assert(thrown);
+
+        thrown = false;
+        try {
+            auto value = const_json.get_value_by_path("settings/0");
+        } catch (const NError::TJsonTypeError& exp) {
+            thrown = true;
+            assert(std::string_view(exp.what()) == "[BAD ACCESS ERROR]: Expected ARRAY, but got OBJECT");
+        }
+        assert(thrown);
+
+        thrown = false;
+        try {
+            json.get_and_create_value_by_path("settings/0/new_key");
+        } catch (const NError::TJsonTypeError& exp) {
+            thrown = true;
+            assert(std::string_view(exp.what()) == "[BAD ACCESS ERROR]: Expected ARRAY, but got OBJECT");
+        }
+        assert(thrown);
+
+
+        // =====================================================================
+        // 3. Проверка TJsonTypeError (Ожидали Object, получили Integer)
+        // =====================================================================
+        
+        TJsonValue arr_json = TArray{TJsonValue(1), TJsonValue(2), TJsonValue(3)};
+        const TJsonValue& const_arr_json = arr_json;
+
+        thrown = false;
+        try {
+            // Обращаемся к элементу массива (числу 2) как к объекту
+            auto value = arr_json.get_value_by_path("1/settings");
+        } catch (const NError::TJsonTypeError& exp) {
+            thrown = true;
+            assert(std::string_view(exp.what()) == "[BAD ACCESS ERROR]: Expected OBJECT, but got INTEGER");
+        }
+        assert(thrown);
+
+        thrown = false;
+        try {
+            auto value = const_arr_json.get_value_by_path("1/settings");
+        } catch (const NError::TJsonTypeError& exp) {
+            thrown = true;
+            assert(std::string_view(exp.what()) == "[BAD ACCESS ERROR]: Expected OBJECT, but got INTEGER");
+        }
+        assert(thrown);
+
+        thrown = false;
+        try {
+            arr_json.get_and_create_value_by_path("1/settings/volume") = 50;
+        } catch (const NError::TJsonTypeError& exp) {
+            thrown = true;
+            assert(std::string_view(exp.what()) == "[BAD ACCESS ERROR]: Expected OBJECT, but got INTEGER");
+        }
+        assert(thrown);
+
+
+        // =====================================================================
+        // 4. Проверка TJsonBadArrayIndex
+        // =====================================================================
+        
+        thrown = false;
+        try {
+            // Массив размером 3, индекс 5 выходит за пределы
+            auto value = arr_json.get_value_by_path("5");
+        } catch (const NError::TJsonBadArrayIndex& exp) {
+            thrown = true;
+            assert(std::string_view(exp.what()) == "[BAD ARRAY INDEX]: array size = 3, index = 5");
+        }
+        assert(thrown);
+
+        thrown = false;
+        try {
+            auto value = const_arr_json.get_value_by_path("5");
+        } catch (const NError::TJsonBadArrayIndex& exp) {
+            thrown = true;
+            assert(std::string_view(exp.what()) == "[BAD ARRAY INDEX]: array size = 3, index = 5");
+        }
+        assert(thrown);
+
+        thrown = false;
+        try {
+            // При использовании get_and_create_value_by_path массив тоже не должен расширяться сам
+            arr_json.get_and_create_value_by_path("5/new_key") = 100;
+        } catch (const NError::TJsonBadArrayIndex& exp) {
+            thrown = true;
+            assert(std::string_view(exp.what()) == "[BAD ARRAY INDEX]: array size = 3, index = 5");
+        }
+        assert(thrown);
+    }
     
 } // namespace NJson::NTests
 
@@ -402,6 +536,8 @@ int main() {
     
     test_path_access();
     test_get_and_create_value_by_path();
+
+    test_exception_text();
 
     std::cout << "All TJsonValue tests passed successfully! You are breathtaking!" << std::endl;
     return 0;

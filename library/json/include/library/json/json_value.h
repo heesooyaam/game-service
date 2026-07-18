@@ -26,17 +26,7 @@ namespace NJson {
         Object
     };
 
-    constexpr std::array<NEnum::TEnumEntry<EJsonType>, 7> get_enum_entries(std::type_identity<EJsonType>) {
-        return {{
-            {EJsonType::Null, "NULL"},
-            {EJsonType::Integer, "INTEGER"},
-            {EJsonType::Double, "DOUBLE"},
-            {EJsonType::Boolean, "BOOLEAN"},
-            {EJsonType::String, "STRING"},
-            {EJsonType::Array, "ARRAY"},
-            {EJsonType::Object, "OBJECT"}
-        }};
-    }
+    constexpr std::array<NEnum::TEnumEntry<EJsonType>, 7> get_enum_entries(std::type_identity<EJsonType>);
 
     class TJsonValue;
 

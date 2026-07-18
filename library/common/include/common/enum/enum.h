@@ -33,8 +33,8 @@ constexpr std::optional<std::string_view> enum_to_string(T value) noexcept {
 template <CDescribedEnum T>
 constexpr std::optional<T> enum_from_string(std::string_view name) noexcept {
     for (const auto& entry : get_enum_entries(std::type_identity<T>{})) {
-        if (entry.Name == name) {
-            return entry.Value;
+        if (entry.name == name) {
+            return entry.value;
         }
     }
 

@@ -7,48 +7,27 @@ namespace NJson::NError {
 
     class TJsonTypeError : public std::runtime_error {
     public:
-        TJsonTypeError()
-            : std::runtime_error("[BAD ACCESS ERROR]")
-        {}
+        TJsonTypeError();
 
-        explicit TJsonTypeError(const std::string& msg) 
-            : std::runtime_error(msg) 
-        {}
-
-        explicit TJsonTypeError(const char* msg) 
-            : std::runtime_error(msg) 
-        {} 
+        explicit TJsonTypeError(const std::string& msg);
+        explicit TJsonTypeError(const char* msg);
     };  
 
     class TJsonBadArrayIndex : public std::runtime_error {
     public:
-        TJsonBadArrayIndex()
-            : std::runtime_error("[BAD ARRAY INDEX]")
-        {}
+        TJsonBadArrayIndex();
 
-        explicit TJsonBadArrayIndex(const std::string& msg) 
-            : std::runtime_error(msg) 
-        {}
-
-        explicit TJsonBadArrayIndex(const char* msg) 
-            : std::runtime_error(msg) 
-        {} 
+        explicit TJsonBadArrayIndex(const std::string& msg);
+        explicit TJsonBadArrayIndex(const char* msg);
     };  
 
 
     class TJsonBadObjectKey : public std::runtime_error {
     public:
-        TJsonBadObjectKey()
-            : std::runtime_error("[BAD OBJECT KEY]")
-        {}
+        TJsonBadObjectKey();
 
-        explicit TJsonBadObjectKey(const std::string& msg) 
-            : std::runtime_error(msg) 
-        {}
-
-        explicit TJsonBadObjectKey(const char* msg) 
-            : std::runtime_error(msg) 
-        {} 
+        explicit TJsonBadObjectKey(const std::string& msg);
+        explicit TJsonBadObjectKey(const char* msg);
     };  
         
 } // namespace NJson::NError

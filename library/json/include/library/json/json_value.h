@@ -1,7 +1,7 @@
 #pragma once
 
-#include <common/enum/enum.h>
-#include <library/json/error.h>
+#include <library/common/enum/enum.h>
+#include <library/json/interface.h>
 
 #include <array>
 #include <concepts>
@@ -16,17 +16,7 @@
 
 namespace NJson {
 
-    enum class EJsonType : uint8_t {
-        Null = 0,
-        Integer,
-        Double,
-        Boolean,
-        String,
-        Array,
-        Object
-    };
-
-    constexpr std::array<NEnum::TEnumEntry<EJsonType>, 7> get_enum_entries(std::type_identity<EJsonType>);
+    constexpr std::array<NEnum::TEnumEntry<EJsonType>, JSON_TYPES_AMOUNT> get_enum_entries(std::type_identity<EJsonType>);
 
     class TJsonValue;
 
@@ -72,10 +62,10 @@ namespace NJson {
         TJsonValue(TNull) noexcept;
 
         template <CJsonInteger T>
-        TJsonValue(T integer_number) noexcept;
+        TJsonValue(T integer_number);
 
         template <CJsonDouble T>
-        TJsonValue(T double_number) noexcept;
+        TJsonValue(T double_number);
 
         TJsonValue(TBoolean) noexcept;
         TJsonValue(TString&&);
@@ -90,10 +80,10 @@ namespace NJson {
         TJsonValue& operator=(TNull) noexcept;
 
         template <CJsonInteger T>
-        TJsonValue& operator=(T integer_number) noexcept;
+        TJsonValue& operator=(T integer_number);
 
         template <CJsonDouble T>
-        TJsonValue& operator=(T double_number) noexcept;
+        TJsonValue& operator=(T double_number);
 
         TJsonValue& operator=(TBoolean) noexcept;
         TJsonValue& operator=(TString&&);
@@ -180,12 +170,7 @@ namespace NJson {
 
         void clear();
         static TJsonValue deep_copy(const TJsonValue&);
-        static bool deep_equality_check(const TJsonValue&, const TJsonValue&);
-
-        TArray& not_safe_get_array();
-        TObject& not_safe_get_object();
-        const TArray& not_safe_get_array() const;
-        const TObject& not_safe_get_object() const;
+        static bool deep_equality_check(const TJsonValue&, const TJsonValue&);        
     };
 
 } //namespace NJson

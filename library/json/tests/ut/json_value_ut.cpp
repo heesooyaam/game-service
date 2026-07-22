@@ -1,11 +1,53 @@
 #include <library/json/json_value.h>
-#include <library/json/error.h> 
+#include <library/json/error.h>
 
 #include <cassert>
 #include <iostream>
-#include <stdexcept>
 
 namespace NJson::NTests {
+
+    void test_concepts() {
+        // 1. Тесты для CCharacter
+        static_assert(CCharacter<char>);
+        static_assert(CCharacter<wchar_t>);
+        static_assert(CCharacter<char32_t>);
+        static_assert(CCharacter<const char&>); // Проверка std::remove_cvref_t
+        static_assert(CCharacter<unsigned char&&>); 
+        static_assert(!CCharacter<int>);        // Отрицательный тест
+        static_assert(!CCharacter<double>);     // Отрицательный тест
+
+        // 2. Тесты для CJsonInteger
+        static_assert(CJsonInteger<int>);
+        static_assert(CJsonInteger<long long>);
+        static_assert(CJsonInteger<std::uint64_t>);
+        static_assert(CJsonInteger<short>);
+        static_assert(CJsonInteger<const int&>); // Проверка std::remove_cvref_t
+        // Проверка исключений:
+        static_assert(!CJsonInteger<bool>);      // bool исключен явно
+        static_assert(!CJsonInteger<char>);      // Символьные типы исключены
+        static_assert(!CJsonInteger<double>);    // Не целочисленный тип
+
+        // 3. Тесты для CJsonDouble
+        static_assert(CJsonDouble<float>);
+        static_assert(CJsonDouble<double>);
+        static_assert(CJsonDouble<long double>);
+        static_assert(CJsonDouble<const double&>); // Проверка std::remove_cvref_t
+        static_assert(!CJsonDouble<int>);          // Отрицательный тест
+        static_assert(!CJsonDouble<bool>);         // Отрицательный тест
+
+        // 4. Тесты для CJsonNumber
+        // Должен пропускать целые числа (кроме bool и char) и числа с плавающей точкой
+        static_assert(CJsonNumber<int>);
+        static_assert(CJsonNumber<double>);
+        static_assert(CJsonNumber<float>);
+        static_assert(CJsonNumber<size_t>);
+        static_assert(CJsonNumber<const volatile long&&>);
+        // Не должен пропускать все остальное
+        static_assert(!CJsonNumber<bool>);
+        static_assert(!CJsonNumber<char>);
+        static_assert(!CJsonNumber<std::nullptr_t>);
+        static_assert(!CJsonNumber<void*>);
+    }
 
     void test_constructors() {
         // Null
@@ -53,6 +95,7 @@ namespace NJson::NTests {
         assert(obj_val.is_object());
         assert(obj_val.get_object().at("key").get_integer() == 100);
     }
+
 
     void test_assignments() {
         TJsonValue val;
@@ -274,7 +317,7 @@ namespace NJson::NTests {
         assert(const_arr.at(2).get_integer() == 30);
 
         bool thrown = false;
-        try { arr.at(100); } catch (const std::out_of_range&) { thrown = true; }
+        try { arr.at(100); } catch (const NError::TJsonArrayOutOfRange&) { thrown = true; }
         assert(thrown);
 
         TJsonValue num = 42;
@@ -299,7 +342,7 @@ namespace NJson::NTests {
         assert(const_obj.at("name").get_string() == "Alice");
         
         bool thrown = false;
-        try { const_obj.at("non_existent_key"); } catch (const std::out_of_range&) { thrown = true; }
+        try { const_obj.at("non_existent_key"); } catch (const NError::TJsonObjectOutOfRange&) { thrown = true; }
         assert(thrown);
 
         TJsonValue str = "string";
@@ -309,205 +352,127 @@ namespace NJson::NTests {
     }
 
     void test_path_access() {
-        TObject root_obj;
-        TArray arr;
-        arr.emplace_back(10);
-        arr.emplace_back(20);
-        TObject inner;
-        inner["cheburek"] = "tasty";
-        arr.emplace_back(std::move(inner));
+        TObject root;
+        TArray users;
         
-        TObject lol;
-        lol["kek"] = std::move(arr);
-        root_obj["lol"] = std::move(lol);
+        TObject user1; 
+        user1["id"] = 1; 
+        user1["name"] = "Alice";
         
-        TJsonValue root(std::move(root_obj));
+        TObject user2; 
+        user2["id"] = 2; 
+        user2["name"] = "Bob";
+        
+        users.emplace_back(std::move(user1));
+        users.emplace_back(std::move(user2));
+        
+        root["users"] = std::move(users);
+        root["metadata"] = TObject{{"count", 2}};
+        
+        TJsonValue json(std::move(root));
 
-        // 1. Успешное чтение (non-const)
-        assert(root.get_value_by_path("lol/kek/0").get_integer() == 10);
-        assert(root.get_value_by_path("lol/kek/2/cheburek").get_string() == "tasty");
+        // Корректный доступ по пути
+        assert(json.get_value_by_path("/users/0/id").get_integer() == 1);
+        assert(json.get_value_by_path("/users/1/name").get_string() == "Bob");
+        assert(json.get_value_by_path("/metadata/count").get_integer() == 2);
 
-        // 2. Успешное чтение (const)
-        const TJsonValue const_root = root;
-        assert(const_root.get_value_by_path("lol/kek/1").get_integer() == 20);
-        assert(const_root.get_value_by_path("lol/kek/2/cheburek").get_string() == "tasty");
+        // Проверка константного доступа
+        const TJsonValue& const_json = json;
+        assert(const_json.get_value_by_path("/users/0/name").get_string() == "Alice");
 
-        // 3. Исключения: выход за границы массива
+        // Объект со строковым ключом, который выглядит как число
+        TJsonValue dict = TObject{{"0", "zero_key_value"}};
+        assert(dict.get_value_by_path("/0").get_string() == "zero_key_value");
+
+        // Исключение: Путь не начинается со слеша
         bool thrown = false;
-        try { const_root.get_value_by_path("lol/kek/99"); } 
-        catch (const NError::TJsonBadArrayIndex&) { thrown = true; }
+        try { json.get_value_by_path("users/0"); } 
+        catch (const NError::TJsonBadPath&) { thrown = true; }
         assert(thrown);
 
-        // 4. Исключения: несуществующий ключ
+        // Исключение: Выход за пределы массива
         thrown = false;
-        try { const_root.get_value_by_path("lol/kek/2/non_existent"); } 
-        catch (const NError::TJsonBadObjectKey&) { thrown = true; }
+        try { json.get_value_by_path("/users/5"); } 
+        catch (const NError::TJsonArrayOutOfRange&) { thrown = true; }
         assert(thrown);
 
-        // 5. Исключения: попытка читать массив как объект (передали строку вместо индекса)
+        // Исключение: Обращение к несуществующему ключу объекта
         thrown = false;
-        try { const_root.get_value_by_path("lol/kek/not_a_number"); } 
-        // parse_array_index вернет nullopt -> уйдет в ветку объектов -> !is_object() бросит TJsonTypeError
+        try { json.get_value_by_path("/metadata/version"); } 
+        catch (const NError::TJsonObjectOutOfRange&) { thrown = true; }
+        assert(thrown);
+
+        // Исключение: Обращение к примитивному типу как к объекту/массиву
+        thrown = false;
+        try { json.get_value_by_path("/metadata/count/value"); } 
         catch (const NError::TJsonTypeError&) { thrown = true; }
         assert(thrown);
     }
 
     void test_get_and_create_value_by_path() {
-        TJsonValue root = TObject{};
-        
-        // 1. Магическое авто-создание пути (Auto-vivification)
-        root.get_and_create_value_by_path("settings/graphics/resolution") = "1080p";
-        assert(root.get_value_by_path("settings/graphics/resolution").get_string() == "1080p");
-        
-        // Добавление ключа в уже существующий объект
-        root.get_and_create_value_by_path("settings/audio") = 100;
-        assert(root.get_value_by_path("settings/audio").get_integer() == 100);
+        TJsonValue json = TNull{};
 
-        // 2. Исключение: Нельзя магически создать элемент массива по индексу (только ключи объектов)
-        root.get_and_create_value_by_path("arr_parent") = TArray{1, 2, 3};
+        // Базовое создание иерархии
+        json.get_and_create_value_by_path("/config/server/port") = 8080;
+        assert(json.is_object());
+        assert(json.get_value_by_path("/config/server/port").get_integer() == 8080);
+
+        // Добавление в уже существующий объект
+        json.get_and_create_value_by_path("/config/server/host") = "localhost";
+        assert(json.get_value_by_path("/config/server/host").get_string() == "localhost");
+
+        // Проверка того, что автоматическое создание порождает объекты, 
+        // даже если ключ выглядит как индекс массива
+        json.get_and_create_value_by_path("/items/0") = "first";
+        assert(json.get_value_by_path("/items").is_object()); 
+        assert(json.get_value_by_path("/items/0").get_string() == "first");
+
+        // Мутация существующего массива по индексу
+        json.get_and_create_value_by_path("/real_array") = TArray{TJsonValue(10), TJsonValue(20)};
+        json.get_and_create_value_by_path("/real_array/1") = 99; // Должен изменить существующий элемент
+        assert(json.get_value_by_path("/real_array/1").get_integer() == 99);
+
+        // Исключение: Попытка создать путь поверх примитивного типа
         bool thrown = false;
-        try { root.get_and_create_value_by_path("arr_parent/99"); }
-        catch (const NError::TJsonBadArrayIndex&) { thrown = true; }
-        assert(thrown);
-
-        // 3. Исключение: Обращение к числу/строке как к объекту
-        thrown = false;
-        try { root.get_and_create_value_by_path("settings/audio/volume"); } 
-        // "audio" это int. nullopt -> else -> is_null()==false, is_object()==false -> throw TJsonTypeError
+        try { json.get_and_create_value_by_path("/config/server/port/value"); } 
         catch (const NError::TJsonTypeError&) { thrown = true; }
         assert(thrown);
     }
 
-
     void test_exception_text() {
-        TJsonValue json = TObject{};
-        json.get_and_create_value_by_path("settings/audio/volume") = 100;
-        
-        // Создаем константную ссылку для проверок const-методов
-        const TJsonValue& const_json = json;
-
-        // =====================================================================
-        // 1. Проверка TJsonBadObjectKey
-        // =====================================================================
-        
         bool thrown = false;
         try {
-            auto value = json.get_value_by_path("settings/volume");
-        } catch (const NError::TJsonBadObjectKey& exp) {
+            TJsonValue val = 42;
+            val.get_string();
+        } catch (const NError::TJsonTypeError& e) {
             thrown = true;
-            assert(std::string_view(exp.what()) == "[BAD OBJECT KEY]: volume");
+            std::string msg = e.what();
+            // Сравниваем, что в строке присутствуют имена типов из енума
+            assert(msg.find("STRING") != std::string::npos);
+            assert(msg.find("INTEGER") != std::string::npos);
         }
         assert(thrown);
 
         thrown = false;
         try {
-            auto value = const_json.get_value_by_path("settings/volume");
-        } catch (const NError::TJsonBadObjectKey& exp) {
+            TJsonValue val = TArray{1, 2};
+            val.at(5);
+        } catch (const NError::TJsonArrayOutOfRange& e) {
             thrown = true;
-            assert(std::string_view(exp.what()) == "[BAD OBJECT KEY]: volume");
-        }
-        assert(thrown);
-
-
-        // =====================================================================
-        // 2. Проверка TJsonTypeError (Ожидали Array, получили Object)
-        // =====================================================================
-        
-        thrown = false;
-        try {
-            // "settings" это объект, но мы обращаемся к нему по индексу "0"
-            auto value = json.get_value_by_path("settings/0");
-        } catch (const NError::TJsonTypeError& exp) {
-            thrown = true;
-            assert(std::string_view(exp.what()) == "[BAD ACCESS ERROR]: Expected ARRAY, but got OBJECT");
+            std::string msg = e.what();
+            assert(msg.find("array size = 2") != std::string::npos);
+            assert(msg.find("index = 5") != std::string::npos);
         }
         assert(thrown);
 
         thrown = false;
         try {
-            auto value = const_json.get_value_by_path("settings/0");
-        } catch (const NError::TJsonTypeError& exp) {
+            TJsonValue val = TObject{{"key", 1}};
+            val.at("missing_key");
+        } catch (const NError::TJsonObjectOutOfRange& e) {
             thrown = true;
-            assert(std::string_view(exp.what()) == "[BAD ACCESS ERROR]: Expected ARRAY, but got OBJECT");
-        }
-        assert(thrown);
-
-        thrown = false;
-        try {
-            json.get_and_create_value_by_path("settings/0/new_key");
-        } catch (const NError::TJsonTypeError& exp) {
-            thrown = true;
-            assert(std::string_view(exp.what()) == "[BAD ACCESS ERROR]: Expected ARRAY, but got OBJECT");
-        }
-        assert(thrown);
-
-
-        // =====================================================================
-        // 3. Проверка TJsonTypeError (Ожидали Object, получили Integer)
-        // =====================================================================
-        
-        TJsonValue arr_json = TArray{TJsonValue(1), TJsonValue(2), TJsonValue(3)};
-        const TJsonValue& const_arr_json = arr_json;
-
-        thrown = false;
-        try {
-            // Обращаемся к элементу массива (числу 2) как к объекту
-            auto value = arr_json.get_value_by_path("1/settings");
-        } catch (const NError::TJsonTypeError& exp) {
-            thrown = true;
-            assert(std::string_view(exp.what()) == "[BAD ACCESS ERROR]: Expected OBJECT, but got INTEGER");
-        }
-        assert(thrown);
-
-        thrown = false;
-        try {
-            auto value = const_arr_json.get_value_by_path("1/settings");
-        } catch (const NError::TJsonTypeError& exp) {
-            thrown = true;
-            assert(std::string_view(exp.what()) == "[BAD ACCESS ERROR]: Expected OBJECT, but got INTEGER");
-        }
-        assert(thrown);
-
-        thrown = false;
-        try {
-            arr_json.get_and_create_value_by_path("1/settings/volume") = 50;
-        } catch (const NError::TJsonTypeError& exp) {
-            thrown = true;
-            assert(std::string_view(exp.what()) == "[BAD ACCESS ERROR]: Expected OBJECT, but got INTEGER");
-        }
-        assert(thrown);
-
-
-        // =====================================================================
-        // 4. Проверка TJsonBadArrayIndex
-        // =====================================================================
-        
-        thrown = false;
-        try {
-            // Массив размером 3, индекс 5 выходит за пределы
-            auto value = arr_json.get_value_by_path("5");
-        } catch (const NError::TJsonBadArrayIndex& exp) {
-            thrown = true;
-            assert(std::string_view(exp.what()) == "[BAD ARRAY INDEX]: array size = 3, index = 5");
-        }
-        assert(thrown);
-
-        thrown = false;
-        try {
-            auto value = const_arr_json.get_value_by_path("5");
-        } catch (const NError::TJsonBadArrayIndex& exp) {
-            thrown = true;
-            assert(std::string_view(exp.what()) == "[BAD ARRAY INDEX]: array size = 3, index = 5");
-        }
-        assert(thrown);
-
-        thrown = false;
-        try {
-            // При использовании get_and_create_value_by_path массив тоже не должен расширяться сам
-            arr_json.get_and_create_value_by_path("5/new_key") = 100;
-        } catch (const NError::TJsonBadArrayIndex& exp) {
-            thrown = true;
-            assert(std::string_view(exp.what()) == "[BAD ARRAY INDEX]: array size = 3, index = 5");
+            std::string msg = e.what();
+            assert(msg.find("[JSON OBJECT OUT OF RANGE]: missing_key") != std::string::npos);
         }
         assert(thrown);
     }
@@ -516,6 +481,8 @@ namespace NJson::NTests {
 
 int main() { 
     using namespace NJson::NTests;
+
+    test_concepts();
 
     test_constructors();
     test_assignments();

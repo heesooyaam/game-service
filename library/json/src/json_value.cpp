@@ -1,68 +1,85 @@
-#include <common/enum/enum.h>
-#include <common/overload.h>
-#include <library/json/error.h>
+#include <library/common/enum/enum.h>
+#include <library/common/overloaded.h>
 #include <library/json/json_value.h>
 
-#include <array>
 #include <cassert>
 #include <cctype>
-#include <charconv>
-#include <system_error>
-#include <optional>
-#include <format>
 
 namespace {
+    template <bool Create, typename TypeJsonValuePtr>
+    auto get_value_by_path_impl(std::string_view path, TypeJsonValuePtr ptr_this) -> decltype(*std::declval<TypeJsonValuePtr>())& {
 
-    std::optional<size_t> parse_array_index(std::string_view data) noexcept {
+        //hesoyam sry my boy
+        using TypeArrayRef = decltype(std::declval<TypeJsonValuePtr>()->get_array());
+        using TypeObjectRef = decltype(std::declval<TypeJsonValuePtr>()->get_object());
 
-        if (data.empty()) {
-            return std::nullopt;
+        if (path.empty()) {
+            throw NJson::NError::TJsonBadPath("[JSON BAD PATH]: Path is Empty");
         }
 
-        if (data.size() > 1 && data.front() == '0') {
-            return std::nullopt;
+        if (path[0] != '/') {
+            throw NJson::NError::TJsonBadPath("[JSON BAD PATH]: first '/' skipped");
         }
+        
+        TypeJsonValuePtr ptr = ptr_this;
+        size_t start = 1;
 
-        size_t index = 0;
+        while (start <= path.size()) {
+            size_t end = path.find('/', start);
+            NJson::TString current;
+            if (end == std::string_view::npos) {
+                current = path.substr(start);
+            } else {
+                current = path.substr(start, end - start);
+            }
 
-        const auto [ptr, error] = std::from_chars(
-            data.data(),
-            data.data() + data.size(),
-            index
-        );
+            std::optional<size_t> opt_index = parse_array_index(current);
+            if (opt_index.has_value() && ptr->is_array()) {
+                const size_t index = opt_index.value();
+                TypeArrayRef reference_array = ptr->get_array();
 
-        if (
-            error != std::errc{} ||
-            ptr != data.data() + data.size()
-        ) {
-            return std::nullopt;
+                if (index >= reference_array.size()) {
+                    throw NJson::NError::TJsonArrayOutOfRange(reference_array.size(), index);
+                }
+
+                ptr = std::addressof(reference_array[index]);
+            } else {
+                if constexpr (Create) {
+
+                    if (ptr->is_null()) {
+                        *ptr = NJson::TObject();
+                    }
+
+                    if (!ptr->is_object()) {
+                        throw NJson::NError::TJsonTypeError(NJson::EJsonType::Object, ptr->get_value_type());
+                    }
+                    
+                    TypeObjectRef reference_object = ptr->get_object();
+                    ptr = std::addressof(reference_object[current]);
+                } else {
+
+                    if (!ptr->is_object()) {
+                        throw NJson::NError::TJsonTypeError(NJson::EJsonType::Object, ptr->get_value_type());
+                    }
+
+                    TypeObjectRef reference_object = ptr->get_object();
+                    auto iter = reference_object.find(current);
+
+                    if (iter == reference_object.end()) {
+                        throw NJson::NError::TJsonObjectOutOfRange(current);
+                    }
+
+                    ptr = std::addressof(iter->second);
+                }
+            }
+            if (end == std::string_view::npos) {
+                break;
+            }
+            start = end + 1;
         }
-
-        return index;
+        return *ptr;
     }
-
-    void type_error(NJson::EJsonType expected, NJson::EJsonType actual) {
-
-        auto opt_expected_type = NEnum::enum_to_string(expected);
-        assert(opt_expected_type.has_value());
-
-        auto opt_actual_type = NEnum::enum_to_string(actual);
-        assert(opt_actual_type.has_value());
-
-        throw NJson::NError::TJsonTypeError(
-            std::format("[BAD ACCESS ERROR]: Expected {}, but got {}", opt_expected_type.value(), opt_actual_type.value())
-        );
-    }
-
-    void index_error(size_t array_size, size_t index) {
-        throw NJson::NError::TJsonBadArrayIndex(std::format("[BAD ARRAY INDEX]: array size = {}, index = {}", array_size, index));
-    }
-
-    void key_error(std::string_view key) {
-        throw NJson::NError::TJsonBadObjectKey(std::format("[BAD OBJECT KEY]: {}", key));
-    }
-
-}   
+}
 
 namespace NJson {
 
@@ -177,7 +194,34 @@ namespace NJson {
     }
 
     EJsonType TJsonValue::get_value_type() const noexcept {
-        return static_cast<EJsonType>(root_value_.index());
+        return std::visit(
+            NCommon::TOverloaded{
+                [](const TNull&) { 
+                    return EJsonType::Null; 
+                },
+                [](const TInteger&) { 
+                    return EJsonType::Integer;
+                },
+                [](const TDouble&) {
+                    return EJsonType::Double;
+                },
+                [](const TBoolean&) {
+                    return EJsonType::Boolean;
+                },
+                [](const TString&) { 
+                    return EJsonType::String;
+                },
+                [](const TArrayPtr& array_ptr) { 
+                    assert(array_ptr);
+                    return EJsonType::Array; 
+                },
+                [](const TObjectPtr& object_ptr) { 
+                    assert(object_ptr);
+                    return EJsonType::Object;
+                }
+            }, 
+            root_value_
+        );
     }
 
     bool TJsonValue::is_null() const noexcept {
@@ -218,84 +262,84 @@ namespace NJson {
 
     TInteger& TJsonValue::get_integer() {
         if (!is_integer()) {
-            type_error(EJsonType::Integer, get_value_type());
+            throw NError::TJsonTypeError(EJsonType::Integer, get_value_type());
         }
         return std::get<TInteger>(root_value_);
     }
 
     TDouble& TJsonValue::get_double() {
         if (!is_double()) {
-            type_error(EJsonType::Double, get_value_type());
+            throw NError::TJsonTypeError(EJsonType::Double, get_value_type());
         }
         return std::get<TDouble>(root_value_);
     }
 
     TBoolean& TJsonValue::get_boolean() {
         if (!is_boolean()) {
-            type_error(EJsonType::Boolean, get_value_type());   
+            throw NError::TJsonTypeError(EJsonType::Boolean, get_value_type());   
         }
         return std::get<TBoolean>(root_value_);
     }
 
     TString& TJsonValue::get_string() {
         if (!is_string()) {
-            type_error(EJsonType::String, get_value_type());        
+            throw NError::TJsonTypeError(EJsonType::String, get_value_type());        
         }
         return std::get<TString>(root_value_);
     }
 
     TArray& TJsonValue::get_array() {
         if (!is_array()) {
-            type_error(EJsonType::Array, get_value_type());        
+            throw NError::TJsonTypeError(EJsonType::Array, get_value_type());        
         }
         return *std::get<TArrayPtr>(root_value_);
     }
 
     TObject& TJsonValue::get_object() {
         if (!is_object()) {
-            type_error(EJsonType::Object, get_value_type());        
+            throw NError::TJsonTypeError(EJsonType::Object, get_value_type());        
         }
         return *std::get<TObjectPtr>(root_value_);
     }
 
     const TInteger& TJsonValue::get_integer() const {
         if (!is_integer()) {
-            type_error(EJsonType::Integer, get_value_type());        
+            throw NError::TJsonTypeError(EJsonType::Integer, get_value_type());        
         }
         return std::get<TInteger>(root_value_);
     }
 
     const TDouble& TJsonValue::get_double() const {
         if (!is_double()) {
-            type_error(EJsonType::Double, get_value_type());        
+            throw NError::TJsonTypeError(EJsonType::Double, get_value_type());        
         }
         return std::get<TDouble>(root_value_);
     }
 
     const TBoolean& TJsonValue::get_boolean() const {
         if (!is_boolean()) {
-            type_error(EJsonType::Boolean, get_value_type());        
+            throw NError::TJsonTypeError(EJsonType::Boolean, get_value_type());        
         }
         return std::get<TBoolean>(root_value_);
     }
 
     const TString& TJsonValue::get_string() const {
         if (!is_string()) {
-            type_error(EJsonType::String, get_value_type());        
+            throw NError::TJsonTypeError(EJsonType::String, get_value_type());        
         }
         return std::get<TString>(root_value_);
     }
 
     const TArray& TJsonValue::get_array() const {
         if (!is_array()) {
-            type_error(EJsonType::Array, get_value_type());        
+            throw NError::TJsonTypeError(EJsonType::Array, get_value_type());        
         }
         return *std::get<TArrayPtr>(root_value_);
     }
 
     const TObject& TJsonValue::get_object() const {
         if (!is_object()) {
-            type_error(EJsonType::Object, get_value_type());        
+            throw NError::TJsonTypeError(EJsonType::Object, get_value_type());        
         }
         return *std::get<TObjectPtr>(root_value_);
     }
@@ -318,11 +362,19 @@ namespace NJson {
     }
 
     TJsonValue& TJsonValue::at(size_t index) {
-        return get_array().at(index);
+        TArray& reference_array = get_array();
+        if (reference_array.size() <= index) {
+            throw NError::TJsonArrayOutOfRange(reference_array.size(), index);
+        }
+        return reference_array[index];
     }
     
     const TJsonValue& TJsonValue::at(size_t index) const {
-        return get_array().at(index);    
+        const TArray& reference_array = get_array();
+        if (reference_array.size() <= index) {
+            throw NError::TJsonArrayOutOfRange(reference_array.size(), index);
+        }
+        return reference_array[index];   
     }
 
     TJsonValue& TJsonValue::operator[](const TString& key) {
@@ -330,11 +382,21 @@ namespace NJson {
     }
         
     TJsonValue& TJsonValue::at(const TString& key) {
-        return get_object().at(key);
+        TObject& reference_object = get_object();
+        auto it = reference_object.find(key);
+        if (it == reference_object.end()) {
+            throw NError::TJsonObjectOutOfRange(key);
+        }
+        return it->second;   
     }
 
     const TJsonValue& TJsonValue::at(const TString& key) const {
-        return get_object().at(key);
+        const TObject& reference_object = get_object();
+        auto it = reference_object.find(key);
+        if (it == reference_object.end()) {
+            throw NError::TJsonObjectOutOfRange(key);
+        }
+        return it->second;  
     }
 
     bool TJsonValue::contains(const TString& key) const {
@@ -342,182 +404,15 @@ namespace NJson {
     }
 
     TJsonValue& TJsonValue::get_and_create_value_by_path(std::string_view path) {
-        TJsonValue* ptr = this;
-        size_t start = 0;
-
-        while (start <= path.size()) {
-
-            size_t end = path.find('/', start);
-
-            TString current;
-
-            if (end == std::string_view::npos) {
-                current = path.substr(start);
-            } else {
-                current = path.substr(start, end - start);
-            }
-
-            std::optional<size_t> opt_index = parse_array_index(current);
-
-            if (opt_index.has_value()) {
-
-                const size_t index = opt_index.value();
-                
-                if (!ptr->is_array()) {
-                    type_error(EJsonType::Array, ptr->get_value_type());        
-                }
-
-                TArray& ref_array = ptr->not_safe_get_array();
-
-                if (index >= ref_array.size()) {
-                    index_error(ref_array.size(), index);
-                }
-
-                ptr = std::addressof(ref_array[index]);
-
-            } else {
-
-                if (ptr->is_null()) {
-                    *ptr = TObject();
-                }
-
-                if (!ptr->is_object()) {
-                    type_error(EJsonType::Object, ptr->get_value_type());        
-                }
-                
-                TObject& ref_object = ptr->not_safe_get_object();
-                ptr = std::addressof(ref_object[current]);
-            }
-
-            if (end == std::string_view::npos) {
-                break;
-            }
-
-            start = end + 1;
-        }
-
-        return *ptr;
+        return get_value_by_path_impl<true, decltype(this)>(path, this);
     }
 
     TJsonValue& TJsonValue::get_value_by_path(std::string_view path) {
-        
-        TJsonValue* ptr = this;
-        size_t start = 0;
-
-        while (start <= path.size()) {
-
-            size_t end = path.find('/', start);
-
-            TString current;
-
-            if (end == std::string_view::npos) {
-                current = path.substr(start);
-            } else {
-                current = path.substr(start, end - start);
-            }
-
-            std::optional<size_t> opt_index = parse_array_index(current);
-
-            if (opt_index.has_value()) {
-
-                const size_t index = opt_index.value();
-                
-                if (!ptr->is_array()) {
-                    type_error(EJsonType::Array, ptr->get_value_type());        
-                }
-
-                TArray& ref_array = ptr->not_safe_get_array();
-
-                if (index >= ref_array.size()) {
-                    index_error(ref_array.size(), index);
-                }
-
-                ptr = std::addressof(ref_array[index]);
-
-            } else {
-
-                if (!ptr->is_object()) {
-                    type_error(EJsonType::Object, ptr->get_value_type());        
-                }
-                
-                TObject& ref_object = ptr->not_safe_get_object();
-                auto iter = ref_object.find(current);
-
-                if (iter == ref_object.end()) {
-                    key_error(current);
-                }
-
-                ptr = std::addressof(iter->second);
-            }
-
-            if (end == std::string_view::npos) {
-                break;
-            }
-
-            start = end + 1;
-        }
-
-        return *ptr;
+        return get_value_by_path_impl<false, decltype(this)>(path, this);
     }
     
     const TJsonValue& TJsonValue::get_value_by_path(std::string_view path) const {
-
-        const TJsonValue* ptr = this;
-
-       size_t start = 0;
-
-        while (start <= path.size()) {
-
-            size_t end = path.find('/', start);
-
-            TString current;
-
-            if (end == std::string_view::npos) {
-                current = path.substr(start);
-            } else {
-                current = path.substr(start, end - start);
-            }
-
-            std::optional<size_t> opt_index = parse_array_index(current);
-
-            if (opt_index.has_value()) {
-
-                const size_t index = opt_index.value();
-                
-                if (!ptr->is_array()) {
-                    type_error(EJsonType::Array, ptr->get_value_type());        
-                }
-
-                const TArray& cref_array = ptr->not_safe_get_array();
-
-                if (index >= cref_array.size()) {
-                    index_error(cref_array.size(), index);
-                }
-
-                ptr = std::addressof(cref_array[index]);
-
-            } else {
-
-                if (!ptr->is_object()) {
-                    type_error(EJsonType::Object, ptr->get_value_type());        
-                }
-                
-                const TObject& cref_object = ptr->not_safe_get_object();
-                auto iter = cref_object.find(current);
-
-                if (iter == cref_object.end()) {
-                    key_error(current);
-                }
-                ptr = std::addressof(iter->second);
-            }
-
-            if (end == std::string_view::npos) {
-                break;
-            }
-
-            start = end + 1;
-        }
-        return *ptr;
+        return get_value_by_path_impl<false, decltype(this)>(path, this);
     }
 
     void TJsonValue::clear() {
@@ -571,30 +466,13 @@ namespace NJson {
                 []<typename T>(const T& lhs, const T& rhs) {
                     return lhs == rhs;
                 },
-                []<typename TLeft, typename TRight>(const TLeft& lhs, const TRight& rhs) {
+                []<typename TLeft, typename TRight>(const TLeft&, const TRight&) {
                     return false;
                 }
             }, 
             lhs.root_value_,
             rhs.root_value_
         );
-    }
-
-
-    TArray& TJsonValue::not_safe_get_array() {
-        return *std::get<TArrayPtr>(root_value_);
-    }
-
-    TObject& TJsonValue::not_safe_get_object() {
-        return *std::get<TObjectPtr>(root_value_);
-    }
-
-    const TArray& TJsonValue::not_safe_get_array() const {
-        return *std::get<TArrayPtr>(root_value_);
-    }
-
-    const TObject& TJsonValue::not_safe_get_object() const {
-        return *std::get<TObjectPtr>(root_value_);
     }
 
 } //namespace NJson

@@ -4,7 +4,7 @@ add_executable(json_value_ut
 
 target_link_libraries(json_value_ut
     PRIVATE
-        json_value
+        json
 )
 
 add_test(NAME json_value_ut COMMAND json_value_ut)

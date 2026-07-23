@@ -7,6 +7,6 @@ target_include_directories(game_game_core
 
 target_link_libraries(game_game_core
     INTERFACE
-        game_common
-        game_json
+        common
+        json
 )

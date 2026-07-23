@@ -11,8 +11,6 @@
 
 namespace NJson {
 
-    class TJsonValue;
-
     enum class EJsonType : uint8_t {
         Null = 0,
         Integer,

@@ -1,4 +1,4 @@
-#include <game/common/version.h>
+#include <library/common/version.h>
 
 #include <iostream>
 

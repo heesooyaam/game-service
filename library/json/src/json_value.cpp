@@ -63,7 +63,6 @@ namespace {
 
             std::optional<size_t> opt_index = parse_array_index(current);
             if (ptr->is_array()) {
-
                 if (!opt_index.has_value()) {
                     throw NJson::NError::TJsonTypeError("Invalid Index");
                 }

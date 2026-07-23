@@ -13,6 +13,9 @@ namespace NJson::NError {
 
         explicit TJsonError(const std::string&);
         explicit TJsonError(const char*);
+    protected:
+        explicit TJsonError(std::string_view, std::string_view);
+        
     };
 
     class TJsonTypeError : public TJsonError {

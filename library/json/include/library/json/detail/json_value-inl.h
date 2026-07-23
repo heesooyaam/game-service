@@ -9,22 +9,35 @@
 #include <cmath>
 #include <utility>
 
-namespace {
+namespace NJson::NPrivate {
 
-    template <NJson::CJsonInteger T>
-    NJson::TInteger checked_integer(T value) {
-        if (!std::in_range<NJson::TInteger>(value)) {
-            throw NJson::NError::TJsonBadIntegerNumber();
+    template <CJsonInteger T>
+    TInteger checked_integer(T value) {
+        if (!std::in_range<TInteger>(value)) {
+            throw NError::TJsonBadIntegerNumber();
         }
-        return static_cast<NJson::TInteger>(value);
+        return static_cast<TInteger>(value);
     }
 
-    template <NJson::CJsonFloatingPoint T>
-    NJson::TDouble checked_floating_point(T value) {
-        if (!std::isfinite(value) || std::isnan(value)) {
-            throw NJson::NError::TJsonBadDoubleNumber();
+    template <CJsonFloatingPoint T>
+    TDouble checked_floating_point(T value) {
+        const long double extended_value =
+            static_cast<long double>(value);
+
+        static constexpr long double max_value =
+            static_cast<long double>(
+                std::numeric_limits<TDouble>::max()
+            );
+
+        if (
+            !std::isfinite(extended_value) ||
+            extended_value < -max_value ||
+            extended_value > max_value
+        ) {
+            throw NError::TJsonBadDoubleNumber();
         }
-        return static_cast<NJson::TDouble>(value);
+
+        return static_cast<TDouble>(value);
     }
 
 }
@@ -33,23 +46,23 @@ namespace NJson {
 
     template <CJsonInteger T>
     TJsonValue::TJsonValue(T integer_number)
-        : root_value_(checked_integer(integer_number))
+        : root_value_(NPrivate::checked_integer(integer_number))
     {}
 
     template <CJsonFloatingPoint T>
     TJsonValue::TJsonValue(T floating_point_number)
-        : root_value_(checked_floating_point(floating_point_number))
+        : root_value_(NPrivate::checked_floating_point(floating_point_number))
     {}
 
     template <CJsonInteger T>
     TJsonValue& TJsonValue::operator=(T integer_number) {
-        root_value_ = checked_integer(integer_number);
+        root_value_ = NPrivate::checked_integer(integer_number);
         return *this;
     }
 
     template <CJsonFloatingPoint T>
     TJsonValue& TJsonValue::operator=(T floating_point_number) {
-        root_value_ = checked_floating_point(floating_point_number);
+        root_value_ = NPrivate::checked_floating_point(floating_point_number);
         return *this;
     }
 

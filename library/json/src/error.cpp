@@ -28,14 +28,25 @@ namespace NJson::NError {
         )
     {}
 
+    TJsonError::TJsonError(std::string_view label, std::string_view msg)
+        : std::runtime_error(
+            std::format(
+                "[{}]: {}", 
+                label,
+                msg
+            )
+        )
+    {}
+
     TJsonTypeError::TJsonTypeError()
-        :  TJsonError("[JSON TYPE ERROR]")
+        :  TJsonError("JSON TYPE ERROR", "UNKNOWN")
     {}
 
     TJsonTypeError::TJsonTypeError(NJson::EJsonType expected, NJson::EJsonType actual)
         : TJsonError(
+            "JSON TYPE ERROR",
             std::format(
-                "[JSON TYPE ERROR]: Expected {}, but got {}", 
+                "Expected {}, but got {}", 
                 NEnum::enum_to_string(expected).value(), 
                 NEnum::enum_to_string(actual).value()
             )
@@ -44,30 +55,27 @@ namespace NJson::NError {
 
     TJsonTypeError::TJsonTypeError(const std::string& msg)
         : TJsonError(
-            std::format(
-                "[JSON TYPE ERROR]: {}", 
-                msg
-            )
+            "JSON TYPE ERROR",
+            msg
         )
     {}
 
     TJsonTypeError::TJsonTypeError(const char* msg)
         : TJsonError(
-            std::format(
-                "[JSON TYPE ERROR]: {}", 
-                msg
-            )
+            "JSON TYPE ERROR",
+            msg
         )
     {}
 
     TJsonArrayOutOfRange::TJsonArrayOutOfRange()
-        : TJsonError("[JSON ARRAY OUT OF RANGE]")
+        : TJsonError("JSON ARRAY OUT OF RANGE", "UNKNOWN")
     {}
 
     TJsonArrayOutOfRange::TJsonArrayOutOfRange(size_t size, size_t index)
         : TJsonError(
+            "JSON ARRAY OUT OF RANGE",
             std::format(
-                "[JSON ARRAY OUT OF RANGE]: array size = {}, index = {}", 
+                "array size = {}, index = {}", 
                 size, 
                 index
             )
@@ -75,46 +83,40 @@ namespace NJson::NError {
     {}
 
     TJsonObjectOutOfRange::TJsonObjectOutOfRange()
-        : TJsonError("[JSON OBJECT OUT OF RANGE]")
+        : TJsonError("JSON OBJECT OUT OF RANGE", "UNKNOWN")
     {}
 
     TJsonObjectOutOfRange::TJsonObjectOutOfRange(const std::string& key)
         : TJsonError(
-            std::format(
-                "[JSON OBJECT OUT OF RANGE]: {}", 
-                key
-            )
+            "JSON OBJECT OUT OF RANGE",
+            key
         )
     {}
 
     TJsonBadPath::TJsonBadPath()
-        : TJsonError("[JSON BAD PATH]")
+        : TJsonError("JSON BAD PATH", "UNKNOWN")
     {}
 
     TJsonBadPath::TJsonBadPath(const std::string& msg)
         : TJsonError(
-            std::format(
-                "[JSON BAD PATH]: {}", 
-                msg
-            )
+            "JSON BAD PATH",
+            msg
         )
     {}
 
     TJsonBadPath::TJsonBadPath(const char* msg)
         : TJsonError(
-            std::format(
-                "[JSON BAD PATH]: {}", 
-                msg
-            )
+            "JSON BAD PATH",
+            msg
         )
     {}
 
     TJsonBadDoubleNumber::TJsonBadDoubleNumber()
-        : TJsonError("[JSON DOUBLE BAD NUMBER]")
+        : TJsonError("JSON DOUBLE BAD NUMBER", "UNKNOWN")
     {}
 
     TJsonBadIntegerNumber::TJsonBadIntegerNumber()
-        : TJsonError("[JSON INTEGER BAD NUMBER]")
+        : TJsonError("JSON INTEGER BAD NUMBER", "UNKNOWN")
     {}
 
 } // namespace NJson::NError

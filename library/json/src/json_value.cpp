@@ -1,24 +1,52 @@
+#include "library/json/error.h"
 #include <library/common/enum/enum.h>
 #include <library/common/overloaded.h>
 #include <library/json/json_value.h>
 
 #include <cassert>
 #include <cctype>
+#include <charconv>
 
 namespace {
+
+    std::optional<size_t> parse_array_index(std::string_view data) noexcept {
+
+        if (data.empty()) {
+            return std::nullopt;
+        }
+
+        if (data.size() > 1 && data.front() == '0') {
+            return std::nullopt;
+        }
+        
+        size_t index = 0;
+        const auto [ptr, error] = std::from_chars(
+            data.data(),
+            data.data() + data.size(),
+            index
+        );
+
+        if (
+            error != std::errc{} ||
+            ptr != data.data() + data.size()
+        ) {
+            return std::nullopt;
+        }
+
+        return index;
+    }
+
     template <bool Create, typename TypeJsonValuePtr>
     auto get_value_by_path_impl(std::string_view path, TypeJsonValuePtr ptr_this) -> decltype(*std::declval<TypeJsonValuePtr>())& {
-
-        //hesoyam sry my boy
         using TypeArrayRef = decltype(std::declval<TypeJsonValuePtr>()->get_array());
         using TypeObjectRef = decltype(std::declval<TypeJsonValuePtr>()->get_object());
 
         if (path.empty()) {
-            throw NJson::NError::TJsonBadPath("[JSON BAD PATH]: Path is Empty");
+            return *ptr_this;
         }
 
         if (path[0] != '/') {
-            throw NJson::NError::TJsonBadPath("[JSON BAD PATH]: first '/' skipped");
+            throw NJson::NError::TJsonBadPath("first '/' skipped");
         }
         
         TypeJsonValuePtr ptr = ptr_this;
@@ -34,7 +62,12 @@ namespace {
             }
 
             std::optional<size_t> opt_index = parse_array_index(current);
-            if (opt_index.has_value() && ptr->is_array()) {
+            if (ptr->is_array()) {
+
+                if (!opt_index.has_value()) {
+                    throw NJson::NError::TJsonTypeError("Invalid Index");
+                }
+
                 const size_t index = opt_index.value();
                 TypeArrayRef reference_array = ptr->get_array();
 
@@ -45,7 +78,6 @@ namespace {
                 ptr = std::addressof(reference_array[index]);
             } else {
                 if constexpr (Create) {
-
                     if (ptr->is_null()) {
                         *ptr = NJson::TObject();
                     }
@@ -57,7 +89,6 @@ namespace {
                     TypeObjectRef reference_object = ptr->get_object();
                     ptr = std::addressof(reference_object[current]);
                 } else {
-
                     if (!ptr->is_object()) {
                         throw NJson::NError::TJsonTypeError(NJson::EJsonType::Object, ptr->get_value_type());
                     }
@@ -79,6 +110,7 @@ namespace {
         }
         return *ptr;
     }
+
 }
 
 namespace NJson {

@@ -11,11 +11,21 @@ namespace NJson::NError {
     {}
 
     TJsonError::TJsonError(const std::string& msg)
-        : std::runtime_error(msg)
+        : std::runtime_error(
+            std::format(
+                "[JSON ERROR]: {}", 
+                msg
+            )
+        )
     {}
 
     TJsonError::TJsonError(const char* msg)
-        : std::runtime_error(msg)
+        : std::runtime_error(
+            std::format(
+                "[JSON ERROR]: {}", 
+                msg
+            )
+        )
     {}
 
     TJsonTypeError::TJsonTypeError()
@@ -33,11 +43,21 @@ namespace NJson::NError {
     {}
 
     TJsonTypeError::TJsonTypeError(const std::string& msg)
-        : TJsonError(msg)
+        : TJsonError(
+            std::format(
+                "[JSON TYPE ERROR]: {}", 
+                msg
+            )
+        )
     {}
 
     TJsonTypeError::TJsonTypeError(const char* msg)
-        : TJsonError(msg)
+        : TJsonError(
+            std::format(
+                "[JSON TYPE ERROR]: {}", 
+                msg
+            )
+        )
     {}
 
     TJsonArrayOutOfRange::TJsonArrayOutOfRange()
@@ -72,11 +92,21 @@ namespace NJson::NError {
     {}
 
     TJsonBadPath::TJsonBadPath(const std::string& msg)
-        : TJsonError(msg)
+        : TJsonError(
+            std::format(
+                "[JSON BAD PATH]: {}", 
+                msg
+            )
+        )
     {}
 
     TJsonBadPath::TJsonBadPath(const char* msg)
-        : TJsonError(msg)
+        : TJsonError(
+            std::format(
+                "[JSON BAD PATH]: {}", 
+                msg
+            )
+        )
     {}
 
     TJsonBadDoubleNumber::TJsonBadDoubleNumber()

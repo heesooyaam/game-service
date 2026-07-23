@@ -27,13 +27,13 @@ namespace NJson::NTests {
         static_assert(!CJsonInteger<char>);      // Символьные типы исключены
         static_assert(!CJsonInteger<double>);    // Не целочисленный тип
 
-        // 3. Тесты для CJsonDouble
-        static_assert(CJsonDouble<float>);
-        static_assert(CJsonDouble<double>);
-        static_assert(CJsonDouble<long double>);
-        static_assert(CJsonDouble<const double&>); // Проверка std::remove_cvref_t
-        static_assert(!CJsonDouble<int>);          // Отрицательный тест
-        static_assert(!CJsonDouble<bool>);         // Отрицательный тест
+        // 3. Тесты для CJsonFloatingPoint
+        static_assert(CJsonFloatingPoint<float>);
+        static_assert(CJsonFloatingPoint<double>);
+        static_assert(CJsonFloatingPoint<long double>);
+        static_assert(CJsonFloatingPoint<const double&>); // Проверка std::remove_cvref_t
+        static_assert(!CJsonFloatingPoint<int>);          // Отрицательный тест
+        static_assert(!CJsonFloatingPoint<bool>);         // Отрицательный тест
 
         // 4. Тесты для CJsonNumber
         // Должен пропускать целые числа (кроме bool и char) и числа с плавающей точкой

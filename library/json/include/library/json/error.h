@@ -1,6 +1,6 @@
 #pragma once
 
-#include <library/json/interface.h>
+#include <library/json/json_types.h>
 
 #include <stdexcept>
 #include <string>

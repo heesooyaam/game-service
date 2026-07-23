@@ -6,90 +6,50 @@
 
 #include <library/json/error.h>
 
-#include <charconv>
 #include <cmath>
 #include <utility>
 
 namespace {
 
-    std::optional<size_t> parse_array_index(std::string_view data) noexcept {
-
-        if (data.empty()) {
-            return std::nullopt;
+    template <NJson::CJsonInteger T>
+    NJson::TInteger checked_integer(T value) {
+        if (!std::in_range<NJson::TInteger>(value)) {
+            throw NJson::NError::TJsonBadIntegerNumber();
         }
-
-        if (data.size() > 1 && data.front() == '0') {
-            return std::nullopt;
-        }
-        
-        size_t index = 0;
-        const auto [ptr, error] = std::from_chars(
-            data.data(),
-            data.data() + data.size(),
-            index
-        );
-
-        if (
-            error != std::errc{} ||
-            ptr != data.data() + data.size()
-        ) {
-            return std::nullopt;
-        }
-
-        return index;
+        return static_cast<NJson::TInteger>(value);
     }
 
-}   
+    template <NJson::CJsonFloatingPoint T>
+    NJson::TDouble checked_floating_point(T value) {
+        if (!std::isfinite(value) || std::isnan(value)) {
+            throw NJson::NError::TJsonBadDoubleNumber();
+        }
+        return static_cast<NJson::TDouble>(value);
+    }
+
+}
 
 namespace NJson {
 
-    constexpr std::array<NEnum::TEnumEntry<EJsonType>, JSON_TYPES_AMOUNT> get_enum_entries(std::type_identity<EJsonType>) {
-        return {{
-            {EJsonType::Null, "NULL"},
-            {EJsonType::Integer, "INTEGER"},
-            {EJsonType::Double, "DOUBLE"},
-            {EJsonType::Boolean, "BOOLEAN"},
-            {EJsonType::String, "STRING"},
-            {EJsonType::Array, "ARRAY"},
-            {EJsonType::Object, "OBJECT"}
-        }};
-    }
-
     template <CJsonInteger T>
     TJsonValue::TJsonValue(T integer_number)
-        : root_value_(static_cast<TInteger>(integer_number))
-    {
-        if (!std::in_range<TInteger>(integer_number)) {
-            throw NError::TJsonBadIntegerNumber();
-        }
-    }
+        : root_value_(checked_integer(integer_number))
+    {}
 
-    template <CJsonDouble T>
-    TJsonValue::TJsonValue(T double_number)
-        : root_value_(static_cast<TDouble>(double_number))
-    {
-        if (!std::isfinite(double_number) || std::isnan(double_number)) {
-            throw NError::TJsonBadDoubleNumber();
-        }
-    }
+    template <CJsonFloatingPoint T>
+    TJsonValue::TJsonValue(T floating_point_number)
+        : root_value_(checked_floating_point(floating_point_number))
+    {}
 
     template <CJsonInteger T>
     TJsonValue& TJsonValue::operator=(T integer_number) {
-        if (!std::in_range<TInteger>(integer_number)) {
-            throw NError::TJsonBadIntegerNumber();
-        }
-
-        root_value_ = static_cast<TInteger>(integer_number);
+        root_value_ = checked_integer(integer_number);
         return *this;
     }
 
-    template <CJsonDouble T>
-    TJsonValue& TJsonValue::operator=(T double_number) {
-        if (!std::isfinite(double_number) || std::isnan(double_number)) {
-            throw NError::TJsonBadDoubleNumber();
-        }
-
-        root_value_ = static_cast<TDouble>(double_number);
+    template <CJsonFloatingPoint T>
+    TJsonValue& TJsonValue::operator=(T floating_point_number) {
+        root_value_ = checked_floating_point(floating_point_number);
         return *this;
     }
 
@@ -104,7 +64,7 @@ namespace NJson {
             std::get<TDouble>(root_value_) += value;
             return *this;
         }
-        throw NError::TJsonTypeError("[JSON TYPE ERROR]: Json is not a number");
+        throw NError::TJsonTypeError("json is not a number");
     }
 
     template <CJsonNumber T>
@@ -118,7 +78,7 @@ namespace NJson {
             std::get<TDouble>(root_value_) -= value;
             return *this;
         }
-        throw NError::TJsonTypeError("[JSON TYPE ERROR]: Json is not a number");
+        throw NError::TJsonTypeError("json is not a number");
     }
 
     template <CJsonNumber T>
@@ -133,7 +93,7 @@ namespace NJson {
             return *this;
         }
 
-        throw NError::TJsonTypeError("[JSON TYPE ERROR]: Json is not a number");
+        throw NError::TJsonTypeError("json is not a number");
     }
 
     template <CJsonNumber T>
@@ -148,7 +108,7 @@ namespace NJson {
             return *this;
         }
 
-        throw NError::TJsonTypeError("[JSON TYPE ERROR]: Json is not a number");
+        throw NError::TJsonTypeError("json is not a number");
     }
 
 } //namespace NJson

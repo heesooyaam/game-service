@@ -1,58 +1,13 @@
 #pragma once
 
-#include <library/common/enum/enum.h>
-#include <library/json/interface.h>
+#include <library/json/detail/json_value_concepts.h>
+#include <library/json/json_types.h>
 
-#include <array>
-#include <concepts>
-#include <cstdint>
-#include <map>
 #include <memory>
-#include <string>
 #include <string_view>
-#include <type_traits>
 #include <variant>
-#include <vector>
 
 namespace NJson {
-
-    constexpr std::array<NEnum::TEnumEntry<EJsonType>, JSON_TYPES_AMOUNT> get_enum_entries(std::type_identity<EJsonType>);
-
-    class TJsonValue;
-
-    using TNull = std::monostate;
-    using TInteger = int64_t;
-    using TDouble = double;
-    using TBoolean = bool;
-    using TString = std::string;
-    using TArray = std::vector<TJsonValue>;
-    using TObject = std::map<TString, TJsonValue>;
-
-    using TArrayPtr = std::unique_ptr<TArray>;
-    using TObjectPtr = std::unique_ptr<TObject>;
-
-    template <typename T>
-    concept CCharacter =
-        std::same_as<std::remove_cvref_t<T>, char> ||
-        std::same_as<std::remove_cvref_t<T>, signed char> ||
-        std::same_as<std::remove_cvref_t<T>, unsigned char> ||
-        std::same_as<std::remove_cvref_t<T>, wchar_t> ||
-        std::same_as<std::remove_cvref_t<T>, char8_t> ||
-        std::same_as<std::remove_cvref_t<T>, char16_t> ||
-        std::same_as<std::remove_cvref_t<T>, char32_t>;
-
-    template <typename T>
-    concept CJsonInteger =
-        std::integral<std::remove_cvref_t<T>> &&
-        !std::same_as<std::remove_cvref_t<T>, bool> &&
-        !CCharacter<T>;
-
-    template <typename T>
-    concept CJsonDouble =
-        std::floating_point<std::remove_cvref_t<T>>;
-
-    template <typename T>
-    concept CJsonNumber = CJsonInteger<T> || CJsonDouble<T>;
 
     class TJsonValue {
     public:
@@ -64,8 +19,8 @@ namespace NJson {
         template <CJsonInteger T>
         TJsonValue(T integer_number);
 
-        template <CJsonDouble T>
-        TJsonValue(T double_number);
+        template <CJsonFloatingPoint T>
+        TJsonValue(T floating_point_number);
 
         TJsonValue(TBoolean) noexcept;
         TJsonValue(TString&&);
@@ -82,8 +37,8 @@ namespace NJson {
         template <CJsonInteger T>
         TJsonValue& operator=(T integer_number);
 
-        template <CJsonDouble T>
-        TJsonValue& operator=(T double_number);
+        template <CJsonFloatingPoint T>
+        TJsonValue& operator=(T floating_point_number);
 
         TJsonValue& operator=(TBoolean) noexcept;
         TJsonValue& operator=(TString&&);
@@ -163,7 +118,8 @@ namespace NJson {
         const TJsonValue& get_value_by_path(std::string_view) const;
 
     private:
-
+        using TArrayPtr = std::unique_ptr<TArray>;
+        using TObjectPtr = std::unique_ptr<TObject>;
         using TStorage = std::variant<TNull, TInteger, TDouble, TBoolean, TString, TArrayPtr, TObjectPtr>;
 
         TStorage root_value_ = std::monostate();
@@ -174,7 +130,6 @@ namespace NJson {
     };
 
 } //namespace NJson
-
 
 #define LIBRARY_JSON_VALUE_H
 #include <library/json/detail/json_value-inl.h>

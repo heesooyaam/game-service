@@ -9,12 +9,6 @@
 #include <cctype>
 #include <string_view>
 
-namespace {
-    bool is_json_space(char c) {
-        return c == ' ' || c == '\n' || c == '\r' || c == '\t';
-    }
-}
-
 namespace NJson {
 
     constexpr char OPEN_OBJECT = '{';
@@ -70,7 +64,7 @@ namespace NJson {
     }
 
     void TJsonParser::skip_space() {
-        while (!is_eof() && is_json_space(peek())) {
+        while (!is_eof() && std::isspace(static_cast<unsigned char>(peek()))) {
             ++pos;
         }
     }
@@ -84,7 +78,7 @@ namespace NJson {
         while (
             !is_eof() 
             && std::find(delimiters.begin(), delimiters.end(), peek()) == delimiters.end()
-            && !is_json_space(peek())
+            && !std::isspace(static_cast<unsigned char>(peek()))
         ) {
             ++pos;
         }

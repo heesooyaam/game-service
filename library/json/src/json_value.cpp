@@ -46,7 +46,7 @@ namespace {
         }
 
         if (path[0] != '/') {
-            throw NJson::NError::TJsonBadPath("first '/' skipped");
+            throw NJson::NError::TJsonBadPath(path, "first '/' skipped");
         }
         
         TypeJsonValuePtr ptr = ptr_this;
@@ -64,7 +64,7 @@ namespace {
             std::optional<size_t> opt_index = parse_array_index(current);
             if (ptr->is_array()) {
                 if (!opt_index.has_value()) {
-                    throw NJson::NError::TJsonTypeError("Invalid Index");
+                    throw NJson::NError::TJsonBadPath(path, "Invalid Index");
                 }
 
                 const size_t index = opt_index.value();

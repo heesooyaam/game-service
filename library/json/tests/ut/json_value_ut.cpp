@@ -314,7 +314,7 @@ namespace NJson::NTests {
         check(s.get_string() == "hello world");
 
         bool thrown = false;
-        try { s += 5; } catch (const NError::TJsonTypeError&) { thrown = true; }
+        try { s += 5; } catch (const NError::TJsonOperationError&) { thrown = true; }
         check(thrown);
     }
 
@@ -511,7 +511,7 @@ namespace NJson::NTests {
         thrown = false;
         try {
             TJsonValue val = std::numeric_limits<std::uint64_t>::max();
-        } catch (const NError::TJsonBadIntegerNumber&) {
+        } catch (const NError::TJsonIntegerOutOfRange&) {
             thrown = true;
         }
         check(thrown); // Ожидаем исключение
@@ -556,7 +556,7 @@ namespace NJson::NTests {
         
         thrown = false;
         try { assign_val = std::numeric_limits<std::uint64_t>::max(); } 
-        catch (const NError::TJsonBadIntegerNumber&) { thrown = true; }
+        catch (const NError::TJsonIntegerOutOfRange&) { thrown = true; }
         check(thrown);
         
         thrown = false;

@@ -14,7 +14,7 @@ namespace NJson::NPrivate {
     template <CJsonInteger T>
     TInteger checked_integer(T value) {
         if (!std::in_range<TInteger>(value)) {
-            throw NError::TJsonBadIntegerNumber();
+            throw NError::TJsonIntegerOutOfRange(value);
         }
         return static_cast<TInteger>(value);
     }
@@ -34,7 +34,7 @@ namespace NJson::NPrivate {
             extended_value < -max_value ||
             extended_value > max_value
         ) {
-            throw NError::TJsonBadDoubleNumber();
+            throw NError::TJsonBadDoubleNumber(value);
         }
 
         return static_cast<TDouble>(value);
@@ -77,7 +77,7 @@ namespace NJson {
             std::get<TDouble>(root_value_) += value;
             return *this;
         }
-        throw NError::TJsonTypeError("json is not a number");
+        throw NError::TJsonOperationError(get_value_type());
     }
 
     template <CJsonNumber T>
@@ -91,7 +91,7 @@ namespace NJson {
             std::get<TDouble>(root_value_) -= value;
             return *this;
         }
-        throw NError::TJsonTypeError("json is not a number");
+        throw NError::TJsonOperationError(get_value_type());
     }
 
     template <CJsonNumber T>
@@ -106,7 +106,7 @@ namespace NJson {
             return *this;
         }
 
-        throw NError::TJsonTypeError("json is not a number");
+        throw NError::TJsonOperationError(get_value_type());
     }
 
     template <CJsonNumber T>
@@ -121,7 +121,7 @@ namespace NJson {
             return *this;
         }
 
-        throw NError::TJsonTypeError("json is not a number");
+        throw NError::TJsonOperationError(get_value_type());
     }
 
 } //namespace NJson

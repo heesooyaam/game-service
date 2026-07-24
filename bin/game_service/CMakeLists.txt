@@ -4,5 +4,5 @@ add_executable(game_service
 
 target_link_libraries(game_service
     PRIVATE
-        game_common
+        common
 )

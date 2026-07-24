@@ -1,6 +1,7 @@
 add_library(json
     src/json_value.cpp
     src/error.cpp
+    src/json_parser.cpp
 )
 
 target_include_directories(json

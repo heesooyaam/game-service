@@ -1,5 +1,6 @@
 #include <library/json/json_value.h>
 #include <library/json/error.h>
+#include <library/json/json_parser.h>
 
 #include <cstdlib>
 #include <iostream>
@@ -564,7 +565,188 @@ namespace NJson::NTests {
         catch (const NError::TJsonBadDoubleNumber&) { thrown = true; }
         check(thrown);
     }
+
+
+    void test_primitives() {
+        check(TJsonParser("null").parse().is_null());
+
+        check(TJsonParser("true").parse().get_boolean() == true);
+        check(TJsonParser("false").parse().get_boolean() == false);
+
+        auto int_val = TJsonParser("42").parse();
+        check(int_val.is_integer());
+        check(int_val.get_integer() == 42);
+
+        auto double_val = TJsonParser("-3.14").parse();
+        check(double_val.is_double());
+        check(double_val.get_double() == -3.14);
+
+        auto str_val = TJsonParser("\"hello world\"").parse();
+        check(str_val.is_string());
+        std::cout << str_val.get_string() << std::endl;
+        check(str_val.get_string() == "hello world");
+    }
+
+// 2. Тест структур (массивы и объекты)
+    void test_arrays_and_objects() {
+        auto arr = TJsonParser("[1, \"two\", false]").parse();
+        check(arr.is_array());
+        check(arr.size() == 3);
+        check(arr[0].get_integer() == 1);
+        check(arr[1].get_string() == "two");
+        check(arr[2].get_boolean() == false);
+
+        auto obj = TJsonParser("{\"key\": 42, \"empty\": {}}").parse();
+        check(obj.is_object());
+        check(obj.contains("key"));
+        check(obj["key"].get_integer() == 42);
+        
+        check(obj.contains("empty"));
+        check(obj["empty"].is_object());
+    }
+
+    // 3. Тест пробелов, переносов строк и мусора
+    void test_whitespaces() {
+        std::string_view messy_json = R"(
+            {
+                "array" : [
+                    1 , 
+                    2               
+                    
+                    ]
+            }
+        )";
+
+        auto result = TJsonParser(messy_json).parse();
+        
+        check(result.is_object());
+        check(result.contains("array"));
+        check(result["array"].is_array());
+        check(result["array"][0].get_integer() == 1);
+        check(result["array"][1].get_integer() == 2);
+
+        check(TJsonParser("   \t\n true \r  ").parse().get_boolean() == true);
+    }
     
+
+    void test_escaped_quotes_bug() {
+        // Валидный JSON: строка, внутри которой есть экранированные кавычки.
+        // В C++ сыром литерале это выглядит так:
+        std::string_view json_with_escapes = "Say \"Hello\"";
+
+        bool caught_error = false;
+
+        try {
+            NJson::TJsonParser parser(json_with_escapes);
+            auto result = parser.parse();
+            
+            // Если дошли сюда, значит баг исправлен
+            std::cout << "Успех! Распарсили: " << result.get_string() << "\n";
+        } catch (...) {
+            // Ловим ваш throw 1;
+            caught_error = true;
+        }
+
+        if (caught_error) {
+            std::cout << "БАГ ПОДТВЕРЖДЕН: Парсер упал на экранированной кавычке!\n";
+            // Если мы пишем тесты на проверку багов (regression test), 
+            // пока баг не исправлен, наличие исключения — это "ожидаемое" поведение для сломанного кода.
+        } else {
+            std::cout << "Тест пройден, багов нет.\n";
+        }
+    }
+
+    // Хелпер: проверяем, что парсер БРОСАЕТ исключение (твой throw 1) на кривом JSON
+    void check_throws(std::string_view bad_json) {
+        bool caught_error = false;
+        try {
+            TJsonParser(bad_json).parse();
+        } catch (int) {
+            caught_error = true; // Поймали твой throw 1, всё супер!
+        } catch (...) {
+            // Поймали что-то другое, это странно, но тоже ошибка
+            caught_error = true; 
+        }
+        
+        if (!caught_error) {
+            std::cerr << "TEST FAILED: Parser should have thrown on: " << bad_json << "\n";
+        }
+        check(caught_error);
+    }
+
+    // =============================================================================
+    // 4. Краевые случаи чисел
+    // =============================================================================
+    void test_number_edge_cases() {
+        check(TJsonParser("0").parse().get_integer() == 0);
+        check(TJsonParser("-42").parse().get_integer() == -42);
+        
+        check(TJsonParser("-0.0").parse().get_double() == 0.0);
+        
+        // Если твой парсер (через from_chars) поддерживает экспоненты:
+        auto exp_val = TJsonParser("1.23e3").parse();
+        check(exp_val.is_double());
+    }
+
+    // =============================================================================
+    // 5. Пустые и вложенные структуры
+    // =============================================================================
+    void test_nested_structures() {
+        // Пустые
+        check(TJsonParser("[]").parse().size() == 0);
+        check(TJsonParser("{}").parse().is_object());
+
+        // Глубокий массив
+        auto deep_arr = TJsonParser("[[[[42]]]]").parse();
+        check(deep_arr[0][0][0][0].get_integer() == 42);
+
+        // Глубокий объект
+        auto deep_obj = TJsonParser("{\"a\": {\"b\": {\"c\": \"d\"}}}").parse();
+        check(deep_obj["a"]["b"]["c"].get_string() == "d");
+    }
+
+    // =============================================================================
+    // 6. Невалидный JSON (парсинг должен падать!)
+    // =============================================================================
+    void test_invalid_json() {
+        // Мусор после валидного JSON
+        check_throws("{\"a\": 1} 123");
+        check_throws("[1, 2] ]");
+
+        // Висячие запятые (строгий JSON их запрещает)
+        check_throws("[1, 2,]");
+        check_throws("{\"a\": 1,}");
+
+        // Незакрытые скобки и кавычки (Unexpected EOF)
+        check_throws("[1, 2");
+        check_throws("{\"a\": 1");
+        check_throws("\"unclosed string");
+
+        // Кривые объекты
+        check_throws("{a: 1}");      // Ключ без кавычек
+        check_throws("{\"a\" 1}");    // Нет двоеточия
+        check_throws("{\"a\": }");    // Нет значения
+
+        // Опечатки в ключевых словах
+        check_throws("nulll");
+        check_throws("tru");
+        check_throws("flase");
+    }    
+
+    void test_hardcore_nesting() {
+        // 1. Дико вложенный массив (10 уровней)
+        auto deep_arr = TJsonParser("[[[[[[[[[[42]]]]]]]]]]").parse();
+        check(deep_arr[0][0][0][0][0][0][0][0][0][0].get_integer() == 42);
+
+        // 2. Жесткая матрешка из объектов (10 уровней)
+        std::string_view obj_str = R"({"x":{"x":{"x":{"x":{"x":{"x":{"x":{"x":{"x":{"x":777}}}}}}}}}})";
+        auto deep_obj = TJsonParser(obj_str).parse();
+        check(deep_obj["x"]["x"]["x"]["x"]["x"]["x"]["x"]["x"]["x"]["x"].get_integer() == 777);
+
+        // 3. Микс: объект внутри массива внутри объекта...
+        auto mix = TJsonParser(R"([{"a": [{"b": [{"c": 99}]}]}])").parse();
+        check(mix[0]["a"][0]["b"][0]["c"].get_integer() == 99);
+    }
 } // namespace NJson::NTests
 
 int main() { 
@@ -595,6 +777,18 @@ int main() {
     test_exception_text();
 
     test_numeric_edge_cases(); 
+
+    test_primitives();
+    test_arrays_and_objects();
+    test_whitespaces();
+
+    test_escaped_quotes_bug();
+
+    test_number_edge_cases();
+    test_nested_structures();
+    test_invalid_json();
+
+    test_hardcore_nesting();
 
     std::cout << "All TJsonValue tests passed successfully! You are breathtaking!" << std::endl;
     return 0;

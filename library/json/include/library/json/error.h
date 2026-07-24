@@ -74,4 +74,30 @@ namespace NJson::NError {
         )
     {}
 
+    class TJsonParserErrorEmptyDocument : public TJsonError {
+    public:
+        TJsonParserErrorEmptyDocument();
+    };
+
+    class TJsonParserErrorExtraData : public TJsonError {
+    public:
+        TJsonParserErrorExtraData(std::string_view);
+    };
+
+    class TJsonParserErrorInvalidToken : public TJsonError {
+    public:
+        TJsonParserErrorInvalidToken(std::string_view);
+        TJsonParserErrorInvalidToken(std::string_view label, std::string_view msg);
+    };
+
+    class TJsonParserErrorMissingData : public TJsonError {
+    public:
+        TJsonParserErrorMissingData(std::string_view label, const char symbol);
+    };
+
+    class TJsonParserErrorUnexpectedEof : public TJsonError {
+    public:
+        TJsonParserErrorUnexpectedEof(std::string_view);
+    };
+
 } // namespace NJson::NError

@@ -66,4 +66,66 @@ namespace NJson::NError {
         )
     {}
 
+    TJsonParserErrorEmptyDocument::TJsonParserErrorEmptyDocument() 
+        : TJsonError(
+            "[JSON PARSER ERROR]",
+            "Empty document"
+        )
+    {}  
+
+    TJsonParserErrorExtraData::TJsonParserErrorExtraData(std::string_view extra_data)
+        : TJsonError(
+            "[JSON PARSER ERROR]",
+            std::format(
+                "Extra Data in document( {} )",
+                extra_data
+            )
+        )
+    {}
+
+    TJsonParserErrorInvalidToken::TJsonParserErrorInvalidToken(std::string_view token)
+        : TJsonError(
+            "[JSON PARSER ERROR]",
+            std::format(
+                "Invalid Token( {} )",
+                token
+            )
+        )
+    {}
+
+    TJsonParserErrorInvalidToken::TJsonParserErrorInvalidToken(std::string_view label, std::string_view msg)
+        : TJsonError(
+            "[JSON PARSER ERROR]",
+            std::format(
+                "Invalid Token in {} ( {} )",
+                label,
+                msg
+            )
+        )
+    {}
+
+    TJsonParserErrorMissingData::TJsonParserErrorMissingData(std::string_view label, const char symbol)
+        : TJsonError(
+            "[JSON PARSER ERROR]",
+            std::format(
+                "Missed {} in {}",
+                symbol,
+                label
+            )
+        )
+    {}
+
+    TJsonParserErrorUnexpectedEof::TJsonParserErrorUnexpectedEof(std::string_view label)
+        : TJsonError(
+            "[JSON PARSER ERROR]",
+            std::format(
+                "Unexpected Eof in {}",
+                label
+            )
+        )
+    {}
+
+
+
+
 } // namespace NJson::NError

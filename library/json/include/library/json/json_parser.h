@@ -9,7 +9,7 @@ namespace NJson {
     class TJsonParser {
     private:
         std::string_view data_;
-        size_t pos;
+        size_t pos_;
     public:
         explicit TJsonParser(std::string_view);
 

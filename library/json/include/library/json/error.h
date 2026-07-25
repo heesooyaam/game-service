@@ -43,13 +43,13 @@ namespace NJson::NError {
     class TJsonBadDoubleNumber : public TJsonError {
     public:
         template<CJsonFloatingPoint T> 
-        TJsonBadDoubleNumber(T value);
+        explicit TJsonBadDoubleNumber(T value);
     };
 
     class TJsonIntegerOutOfRange : public TJsonError {
     public:
         template<CJsonInteger T> 
-        TJsonIntegerOutOfRange(T value);
+        explicit TJsonIntegerOutOfRange(T value);
     };
 
     template<CJsonFloatingPoint T> 
@@ -74,30 +74,39 @@ namespace NJson::NError {
         )
     {}
 
-    class TJsonParserErrorEmptyDocument : public TJsonError {
-    public:
-        TJsonParserErrorEmptyDocument();
+    class TJsonParserError : public std::runtime_error {
+    protected:
+        explicit TJsonParserError(std::string_view, std::string_view);
     };
 
-    class TJsonParserErrorExtraData : public TJsonError {
+    class TJsonParserErrorEmptyDocument : public TJsonParserError {
     public:
-        TJsonParserErrorExtraData(std::string_view);
+        explicit TJsonParserErrorEmptyDocument();
     };
 
-    class TJsonParserErrorInvalidToken : public TJsonError {
+    class TJsonParserErrorExtraData : public TJsonParserError {
     public:
-        TJsonParserErrorInvalidToken(std::string_view);
-        TJsonParserErrorInvalidToken(std::string_view label, std::string_view msg);
+        explicit TJsonParserErrorExtraData(std::string_view);
     };
 
-    class TJsonParserErrorMissingData : public TJsonError {
+    class TJsonParserErrorInvalidToken : public TJsonParserError {
     public:
-        TJsonParserErrorMissingData(std::string_view label, const char symbol);
+        explicit TJsonParserErrorInvalidToken(std::string_view);
     };
 
-    class TJsonParserErrorUnexpectedEof : public TJsonError {
+    class TJsonParserErrorMissingData : public TJsonParserError {
     public:
-        TJsonParserErrorUnexpectedEof(std::string_view);
+        explicit TJsonParserErrorMissingData(std::string_view);
+    };
+
+    class TJsonParserErrorUnexpectedEof : public TJsonParserError {
+    public:
+        explicit TJsonParserErrorUnexpectedEof(std::string_view);
+    };
+
+    class TJsonParserErrorDuplicateKey : public TJsonParserError {
+    public:
+        explicit TJsonParserErrorDuplicateKey(std::string_view);
     };
 
 } // namespace NJson::NError

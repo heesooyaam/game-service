@@ -74,7 +74,7 @@ namespace NJson::NError {
         )
     {}
 
-    class TJsonParserError : public std::runtime_error {
+    class TJsonParserError : public TJsonError {
     protected:
         explicit TJsonParserError(std::string_view, std::string_view);
     };

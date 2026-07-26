@@ -67,13 +67,7 @@ namespace NJson::NError {
     {}
 
     TJsonParserError::TJsonParserError(std::string_view label, std::string_view msg)
-        : std::runtime_error(
-            std::format(
-                "[{}]: {}", 
-                label,
-                msg
-            )
-        )
+        : TJsonError(label, msg)
     {}
 
     TJsonParserErrorEmptyDocument::TJsonParserErrorEmptyDocument() 

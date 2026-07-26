@@ -10,7 +10,7 @@
 #include <string_view>
 
 namespace NJson::NDetail {
-    bool is_json_whitespace(char c) {
+    bool is_json_whitespace(char c) noexcept {
         return c == ' ' || c == '\n' || c == '\r' || c == '\t';
     }
 }
@@ -24,6 +24,10 @@ namespace {
 }
 
 namespace NJson {
+
+    TJsonValue parse(std::string_view data) {
+        return TJsonParser(data).parse();
+    }
 
     constexpr char OPEN_OBJECT = '{';
     constexpr char CLOSE_OBJECT = '}';
@@ -61,33 +65,33 @@ namespace NJson {
         skip_space();
 
         if (!is_eof()) {
-            throw NError::TJsonParserErrorExtraData(data_.substr(pos_)); 
+            throw NError::TJsonParserErrorExtraData(error_info(pos_, data_.substr(pos_))); 
         }
 
         return json;
     }
 
-    char TJsonParser::peek() const {
+    char TJsonParser::peek() const noexcept {
         return data_[pos_];
     }
 
-    void TJsonParser::next() {
+    void TJsonParser::next() noexcept {
         assert(!is_eof());
         pos_++;
         skip_space();
     }
 
-    void TJsonParser::skip_space() {
+    void TJsonParser::skip_space() noexcept {
         while (!is_eof() && NDetail::is_json_whitespace(peek())) {
             ++pos_;
         }
     }
 
-    bool TJsonParser::is_eof() const {
+    bool TJsonParser::is_eof() const noexcept {
         return pos_ == data_.size();
     }
 
-    std::string_view TJsonParser::substr_to_delim() {
+    std::string_view TJsonParser::substr_to_delim() noexcept {
         size_t start = pos_;
         while (
             !is_eof() 
@@ -148,7 +152,7 @@ namespace NJson {
             }
         }
 
-        throw NError::TJsonParserErrorInvalidToken(substr);
+        throw NError::TJsonParserErrorInvalidToken(error_info(pos_ - substr.size(), substr));
     }
 
 
@@ -196,7 +200,13 @@ namespace NJson {
                         throw NError::TJsonParserErrorInvalidToken(error_info(pos_, std::string("parsing string, bad \\")));
                     }
 
-            } else {
+            } else {    
+                const auto character = static_cast<unsigned char>(peek());
+
+                if (character < 0x20) {
+                    throw NError::TJsonParserErrorInvalidToken(error_info(pos_,"unescaped control character in string"));
+                }
+
                 str.push_back(peek());
             }
         }
@@ -256,7 +266,7 @@ namespace NJson {
                     auto json_value = parse_value();
 
                     auto [iterator, inserted] = object.try_emplace(
-                        std::move(std::move(json_key.get_string())),
+                        std::move(json_key.get_string()),
                         std::move(json_value)
                     );
 

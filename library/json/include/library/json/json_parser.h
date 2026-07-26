@@ -6,6 +6,8 @@
 
 namespace NJson {
 
+    TJsonValue parse(std::string_view data);
+
     class TJsonParser {
     private:
         std::string_view data_;
@@ -21,12 +23,12 @@ namespace NJson {
         
         TJsonValue parse();
     private:
-        char peek() const;
-        void next();
-        void skip_space();
-        bool is_eof() const;
+        char peek() const noexcept;
+        void next() noexcept;
+        void skip_space() noexcept;
+        bool is_eof() const noexcept;
 
-        std::string_view substr_to_delim();
+        std::string_view substr_to_delim() noexcept;
 
         TJsonValue parse_value();
         TJsonValue parse_simple_value();

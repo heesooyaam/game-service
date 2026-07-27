@@ -1,9 +1,12 @@
-#include <library/json/json_value.h>
 #include <library/json/error.h>
+#include <library/json/json_value.h>
 
+#include <cassert>
+#include <cctype>
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <string_view>
 
 constexpr void static_check(bool value) {
     if (!value) {
@@ -24,38 +27,35 @@ namespace NJson::NTests {
         static_check(CCharacter<char>);
         static_check(CCharacter<wchar_t>);
         static_check(CCharacter<char32_t>);
-        static_check(CCharacter<const char&>); // Проверка std::remove_cvref_t
+        static_check(CCharacter<const char&>); 
         static_check(CCharacter<unsigned char&&>); 
-        static_check(!CCharacter<int>);        // Отрицательный тест
-        static_check(!CCharacter<double>);     // Отрицательный тест
+        static_check(!CCharacter<int>);        
+        static_check(!CCharacter<double>);     
 
         // 2. Тесты для CJsonInteger
         static_check(CJsonInteger<int>);
         static_check(CJsonInteger<long long>);
         static_check(CJsonInteger<std::uint64_t>);
         static_check(CJsonInteger<short>);
-        static_check(CJsonInteger<const int&>); // Проверка std::remove_cvref_t
-        // Проверка исключений:
-        static_check(!CJsonInteger<bool>);      // bool исключен явно
-        static_check(!CJsonInteger<char>);      // Символьные типы исключены
-        static_check(!CJsonInteger<double>);    // Не целочисленный тип
+        static_check(CJsonInteger<const int&>); 
+        static_check(!CJsonInteger<bool>);      
+        static_check(!CJsonInteger<char>);      
+        static_check(!CJsonInteger<double>);    
 
         // 3. Тесты для CJsonFloatingPoint
         static_check(CJsonFloatingPoint<float>);
         static_check(CJsonFloatingPoint<double>);
         static_check(CJsonFloatingPoint<long double>);
-        static_check(CJsonFloatingPoint<const double&>); // Проверка std::remove_cvref_t
-        static_check(!CJsonFloatingPoint<int>);          // Отрицательный тест
-        static_check(!CJsonFloatingPoint<bool>);         // Отрицательный тест
+        static_check(CJsonFloatingPoint<const double&>); 
+        static_check(!CJsonFloatingPoint<int>);          
+        static_check(!CJsonFloatingPoint<bool>);         
 
         // 4. Тесты для CJsonNumber
-        // Должен пропускать целые числа (кроме bool и char) и числа с плавающей точкой
         static_check(CJsonNumber<int>);
         static_check(CJsonNumber<double>);
         static_check(CJsonNumber<float>);
         static_check(CJsonNumber<size_t>);
         static_check(CJsonNumber<const volatile long&&>);
-        // Не должен пропускать все остальное
         static_check(!CJsonNumber<bool>);
         static_check(!CJsonNumber<char>);
         static_check(!CJsonNumber<std::nullptr_t>);
@@ -384,14 +384,12 @@ namespace NJson::NTests {
         
         TJsonValue json(std::move(root));
 
-        // --- НОВЫЙ ТЕСТ: ПУСТОЙ ПУТЬ ---
-        // Пустой путь должен возвращать сам JSON (корень)
+        // ПУСТОЙ ПУТЬ
         check(json.get_value_by_path("") == json);
         const TJsonValue& const_json = json;
         check(const_json.get_value_by_path("") == json);
 
         check(std::addressof(json.get_and_create_value_by_path("")) == std::addressof(json));
-
 
         // Корректный доступ по пути
         check(json.get_value_by_path("/users/0/id").get_integer() == 1);
@@ -405,25 +403,22 @@ namespace NJson::NTests {
         TJsonValue dict = TObject{{"0", "zero_key_value"}};
         check(dict.get_value_by_path("/0").get_string() == "zero_key_value");
 
-        // Исключение: Путь не начинается со слеша (но и не пустой)
+        // Исключения
         bool thrown = false;
         try { json.get_value_by_path("users/0"); } 
         catch (const NError::TJsonBadPath&) { thrown = true; }
         check(thrown);
 
-        // Исключение: Выход за пределы массива
         thrown = false;
         try { json.get_value_by_path("/users/5"); } 
         catch (const NError::TJsonArrayOutOfRange&) { thrown = true; }
         check(thrown);
 
-        // Исключение: Обращение к несуществующему ключу объекта
         thrown = false;
         try { json.get_value_by_path("/metadata/version"); } 
         catch (const NError::TJsonObjectOutOfRange&) { thrown = true; }
         check(thrown);
 
-        // Исключение: Обращение к примитивному типу как к объекту/массиву
         thrown = false;
         try { json.get_value_by_path("/metadata/count/value"); } 
         catch (const NError::TJsonTypeError&) { thrown = true; }
@@ -433,10 +428,8 @@ namespace NJson::NTests {
     void test_get_and_create_value_by_path() {
         TJsonValue json = TNull{};
 
-        // --- НОВЫЙ ТЕСТ: ПУСТОЙ ПУТЬ ---
-        // При создании по пустому пути мы должны получить сам объект
+        // ПУСТОЙ ПУТЬ
         check(json.get_and_create_value_by_path("") == json);
-
         check(std::addressof(json.get_and_create_value_by_path("")) == std::addressof(json));
 
         // Базовое создание иерархии
@@ -448,18 +441,17 @@ namespace NJson::NTests {
         json.get_and_create_value_by_path("/config/server/host") = "localhost";
         check(json.get_value_by_path("/config/server/host").get_string() == "localhost");
 
-        // Проверка того, что автоматическое создание порождает объекты, 
-        // даже если ключ выглядит как индекс массива
+        // Автоматическое создание
         json.get_and_create_value_by_path("/items/0") = "first";
         check(json.get_value_by_path("/items").is_object()); 
         check(json.get_value_by_path("/items/0").get_string() == "first");
 
         // Мутация существующего массива по индексу
         json.get_and_create_value_by_path("/real_array") = TArray{TJsonValue(10), TJsonValue(20)};
-        json.get_and_create_value_by_path("/real_array/1") = 99; // Должен изменить существующий элемент
+        json.get_and_create_value_by_path("/real_array/1") = 99;
         check(json.get_value_by_path("/real_array/1").get_integer() == 99);
 
-        // Исключение: Попытка создать путь поверх примитивного типа
+        // Исключение
         bool thrown = false;
         try { json.get_and_create_value_by_path("/config/server/port/value"); } 
         catch (const NError::TJsonTypeError&) { thrown = true; }
@@ -474,7 +466,6 @@ namespace NJson::NTests {
         } catch (const NError::TJsonTypeError& e) {
             thrown = true;
             std::string msg = e.what();
-            // Сравниваем, что в строке присутствуют имена типов из енума
             check(msg.find("STRING") != std::string::npos);
             check(msg.find("INTEGER") != std::string::npos);
         }
@@ -507,51 +498,49 @@ namespace NJson::NTests {
     void test_numeric_edge_cases() {
         bool thrown = false;
 
-        // 1. Тест переполнения целого числа (uint64_t max не влезает в int64_t)
+        // 1. Тест переполнения целого числа
         thrown = false;
         try {
             TJsonValue val = std::numeric_limits<std::uint64_t>::max();
         } catch (const NError::TJsonIntegerOutOfRange&) {
             thrown = true;
         }
-        check(thrown); // Ожидаем исключение
+        check(thrown); 
 
-        // Убедимся, что максимально допустимое значение int64_t проходит успешно
         TJsonValue valid_int = std::numeric_limits<int64_t>::max();
         check(valid_int.get_integer() == std::numeric_limits<int64_t>::max());
 
-        // 2. Тест на NaN (Not a Number)
+        // 2. NaN
         thrown = false;
         try {
             TJsonValue val = std::numeric_limits<double>::quiet_NaN();
         } catch (const NError::TJsonBadDoubleNumber&) {
             thrown = true;
         }
-        check(thrown); // Ожидаем исключение
+        check(thrown); 
 
-        // 3. Тест на Infinity (Положительная бесконечность)
+        // 3. Infinity 
         thrown = false;
         try {
             TJsonValue val = std::numeric_limits<double>::infinity();
         } catch (const NError::TJsonBadDoubleNumber&) {
             thrown = true;
         }
-        check(thrown); // Ожидаем исключение
+        check(thrown);
 
-        // 4. Тест на -Infinity (Отрицательная бесконечность)
+        // 4. -Infinity
         thrown = false;
         try {
             TJsonValue val = -std::numeric_limits<double>::infinity();
         } catch (const NError::TJsonBadDoubleNumber&) {
             thrown = true;
         }
-        check(thrown); // Ожидаем исключение
+        check(thrown);
 
-        // Убедимся, что максимальное значение double проходит успешно (так как оно конечное)
         TJsonValue valid_double = std::numeric_limits<double>::max();
         check(valid_double.get_double() == std::numeric_limits<double>::max());
 
-        // 5. Тест тех же самых проверок, но для оператора присваивания
+        // 5. Тест оператора присваивания
         TJsonValue assign_val;
         
         thrown = false;
@@ -564,7 +553,7 @@ namespace NJson::NTests {
         catch (const NError::TJsonBadDoubleNumber&) { thrown = true; }
         check(thrown);
     }
-    
+
 } // namespace NJson::NTests
 
 int main() { 
@@ -593,7 +582,6 @@ int main() {
     test_get_and_create_value_by_path();
 
     test_exception_text();
-
     test_numeric_edge_cases(); 
 
     std::cout << "All TJsonValue tests passed successfully! You are breathtaking!" << std::endl;

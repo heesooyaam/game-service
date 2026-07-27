@@ -43,13 +43,13 @@ namespace NJson::NError {
     class TJsonBadDoubleNumber : public TJsonError {
     public:
         template<CJsonFloatingPoint T> 
-        TJsonBadDoubleNumber(T value);
+        explicit TJsonBadDoubleNumber(T value);
     };
 
     class TJsonIntegerOutOfRange : public TJsonError {
     public:
         template<CJsonInteger T> 
-        TJsonIntegerOutOfRange(T value);
+        explicit TJsonIntegerOutOfRange(T value);
     };
 
     template<CJsonFloatingPoint T> 
@@ -73,5 +73,40 @@ namespace NJson::NError {
             )
         )
     {}
+
+    class TJsonParserError : public TJsonError {
+    protected:
+        explicit TJsonParserError(std::string_view, std::string_view);
+    };
+
+    class TJsonParserErrorEmptyDocument : public TJsonParserError {
+    public:
+        explicit TJsonParserErrorEmptyDocument();
+    };
+
+    class TJsonParserErrorExtraData : public TJsonParserError {
+    public:
+        explicit TJsonParserErrorExtraData(size_t pos, std::string_view);
+    };
+
+    class TJsonParserErrorInvalidToken : public TJsonParserError {
+    public:
+        explicit TJsonParserErrorInvalidToken(size_t pos, std::string_view);
+    };
+
+    class TJsonParserErrorMissingData : public TJsonParserError {
+    public:
+        explicit TJsonParserErrorMissingData(size_t pos, std::string_view);
+    };
+
+    class TJsonParserErrorUnexpectedEof : public TJsonParserError {
+    public:
+        explicit TJsonParserErrorUnexpectedEof(size_t pos, std::string_view);
+    };
+
+    class TJsonParserErrorDuplicateKey : public TJsonParserError {
+    public:
+        explicit TJsonParserErrorDuplicateKey(size_t pos, std::string_view);
+    };
 
 } // namespace NJson::NError

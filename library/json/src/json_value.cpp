@@ -2,15 +2,14 @@
 #include <library/common/enum/enum.h>
 #include <library/common/overloaded.h>
 #include <library/json/json_value.h>
+#include <library/common/parse_number.h>
 
 #include <cassert>
 #include <cctype>
-#include <charconv>
 
 namespace {
 
     std::optional<size_t> parse_array_index(std::string_view data) noexcept {
-
         if (data.empty()) {
             return std::nullopt;
         }
@@ -19,21 +18,7 @@ namespace {
             return std::nullopt;
         }
         
-        size_t index = 0;
-        const auto [ptr, error] = std::from_chars(
-            data.data(),
-            data.data() + data.size(),
-            index
-        );
-
-        if (
-            error != std::errc{} ||
-            ptr != data.data() + data.size()
-        ) {
-            return std::nullopt;
-        }
-
-        return index;
+        return NCommon::parse_number<size_t>(data); 
     }
 
     template <bool Create, typename TypeJsonValuePtr>

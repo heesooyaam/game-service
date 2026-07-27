@@ -107,12 +107,12 @@ namespace NJson::NError {
         )
     {}
 
-    TJsonParserErrorUnexpectedEof::TJsonParserErrorUnexpectedEof(std::string_view label)
+    TJsonParserErrorUnexpectedEof::TJsonParserErrorUnexpectedEof(std::string_view msg)
         : TJsonParserError(
             "JSON PARSER ERROR",
             std::format(
-                "Unexpected Eof in {}",
-                label
+                "Unexpected Eof ( {} )",
+                msg
             )
         )
     {}

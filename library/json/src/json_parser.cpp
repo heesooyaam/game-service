@@ -126,11 +126,11 @@ namespace NJson {
 
             bool bad_number = false;
             if (substr.size() > 1) {
-                if (substr[0] == '0' && std::isdigit(substr[1])) {
+                if (substr[0] == '0' && std::isdigit(static_cast<unsigned char>(substr[1]))) {
                     bad_number = true;
                 }
                 
-                if (substr.size() > 2 && substr[0] == '-' && substr[1] == '0' && std::isdigit(substr[2])) {
+                if (substr.size() > 2 && substr[0] == '-' && substr[1] == '0' && std::isdigit(static_cast<unsigned char>(substr[2]))) {
                     bad_number = true;
                 }
             }
@@ -212,7 +212,7 @@ namespace NJson {
         }
 
         if (is_eof()) {
-            throw NError::TJsonParserErrorUnexpectedEof("parsing string");
+            throw NError::TJsonParserErrorUnexpectedEof(error_info(pos_, "parsing string"));
         }
 
         ++pos_;
@@ -242,7 +242,7 @@ namespace NJson {
         }
 
         if (is_eof()) {
-            throw NError::TJsonParserErrorUnexpectedEof("parsing array");
+            throw NError::TJsonParserErrorUnexpectedEof(error_info(pos_, "parsing array"));
         }
 
         ++pos_;
@@ -259,7 +259,7 @@ namespace NJson {
             skip_space();
             if (!is_eof()) {
                 if (peek() != COLON) {
-                    throw NError::TJsonParserErrorMissingData(error_info(pos_, std::format("parsing objecy, miss {}", COLON)));
+                    throw NError::TJsonParserErrorMissingData(error_info(pos_, std::format("parsing object, miss {}", COLON)));
                 }
                 next();
                 if (!is_eof()) {
@@ -292,7 +292,7 @@ namespace NJson {
         }
 
         if (is_eof()) {
-            throw NError::TJsonParserErrorUnexpectedEof("parsing object");
+            throw NError::TJsonParserErrorUnexpectedEof(error_info(pos_,"parsing object"));
         }
 
         ++pos_;

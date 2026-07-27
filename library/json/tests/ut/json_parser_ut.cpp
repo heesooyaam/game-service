@@ -23,7 +23,7 @@ void check(bool value) {
 
 namespace NJson::NTests {
 
-     void test_primitives() {
+     void test_parser_primitives() {
         check(TJsonParser("null").parse().is_null());
 
         check(TJsonParser("true").parse().get_boolean() == true);
@@ -42,7 +42,7 @@ namespace NJson::NTests {
         check(str_val.get_string() == "hello world");
     }
 
-    void test_string_escaping() {
+    void test_parser_string_escaping() {
         auto s1 = TJsonParser(R"("Say \"Hello\"")").parse();
         check(s1.get_string() == "Say \"Hello\"");
 
@@ -59,7 +59,7 @@ namespace NJson::NTests {
         check(s5.get_string() == "\b\f\n\r\t/\\\"");
     }
 
-    void test_arrays_and_objects() {
+    void test_parser_arrays_and_objects() {
         auto arr = TJsonParser("[1, \"two\", false]").parse();
         check(arr.is_array());
         check(arr.size() == 3);
@@ -76,7 +76,7 @@ namespace NJson::NTests {
         check(obj["empty"].is_object());
     }
 
-    void test_whitespaces() {
+    void test_parser_whitespaces() {
         std::string_view messy_json = R"(
             {
                 "array" : [
@@ -113,7 +113,7 @@ namespace NJson::NTests {
         check(caught_error);
     }
 
-    void test_number_edge_cases() {
+    void test_parser_number_edge_cases() {
         check(TJsonParser("0").parse().get_integer() == 0);
         check(TJsonParser("-42").parse().get_integer() == -42);
         
@@ -123,7 +123,7 @@ namespace NJson::NTests {
         check(exp_val.is_double());
     }
 
-    void test_nested_structures() {
+    void test_parser_nested_structures() {
         check(TJsonParser("[]").parse().size() == 0);
         check(TJsonParser("{}").parse().is_object());
 
@@ -134,7 +134,7 @@ namespace NJson::NTests {
         check(deep_obj["a"]["b"]["c"].get_string() == "d");
     }
 
-    void test_invalid_json() {
+    void test_parser_invalid_json() {
         check_throws("{\"a\": 1} 123");
         check_throws("[1, 2] ]");
 
@@ -158,7 +158,7 @@ namespace NJson::NTests {
         check_throws(R"("trailing slash \")"); 
     }    
 
-    void test_hardcore_nesting() {
+    void test_parser_hardcore_nesting() {
         auto deep_arr = TJsonParser("[[[[[[[[[[42]]]]]]]]]]").parse();
         check(deep_arr[0][0][0][0][0][0][0][0][0][0].get_integer() == 42);
 
@@ -170,7 +170,7 @@ namespace NJson::NTests {
         check(mix[0]["a"][0]["b"][0]["c"].get_integer() == 99);
     }
 
-    void test_empty_strings_and_documents() {
+    void test_parser_empty_strings_and_documents() {
         auto empty_str = TJsonParser(R"("")").parse();
         check(empty_str.is_string());
         check(empty_str.get_string() == "");
@@ -187,7 +187,7 @@ namespace NJson::NTests {
         check_throws(R"([1, 2] [3, 4])");
     }
 
-    void test_complex_mutations() {
+    void test_parser_complex_mutations() {
         TJsonValue val = TObject{};
         
         val.get_object()["dynamic_key"] = 42;
@@ -205,7 +205,7 @@ namespace NJson::NTests {
         check(val["dynamic_key"].is_null());
     }
 
-    void test_more_invalid_edge_cases() {
+    void test_parser_more_invalid_edge_cases() {
         check_throws("{'single_quotes': 1}"); 
         check_throws("['string']"); 
 
@@ -216,7 +216,7 @@ namespace NJson::NTests {
         check_throws(R"({"a": 1,, "b": 2})");
     }
 
-    void test_hard_check() {
+    void test_parser_hard_check() {
         std::string str = std::string(1000, '[') + std::string("{\"123\" : 123}") + std::string(1000, ']');
         auto json = TJsonParser(str).parse();
         for (size_t i = 0; i < 1000; ++i) {
@@ -231,22 +231,22 @@ namespace NJson::NTests {
 int main() {
     using namespace NJson::NTests;
 
-    test_primitives();
-    test_string_escaping(); 
-    test_arrays_and_objects();
-    test_whitespaces();
+    test_parser_primitives();
+    test_parser_string_escaping(); 
+    test_parser_arrays_and_objects();
+    test_parser_whitespaces();
 
-    test_number_edge_cases();
-    test_nested_structures();
+    test_parser_number_edge_cases();
+    test_parser_nested_structures();
     
-    test_invalid_json();
-    test_empty_strings_and_documents();
-    test_more_invalid_edge_cases();
+    test_parser_invalid_json();
+    test_parser_empty_strings_and_documents();
+    test_parser_more_invalid_edge_cases();
 
-    test_hardcore_nesting();
-    test_complex_mutations();
+    test_parser_hardcore_nesting();
+    test_parser_complex_mutations();
 
-    test_hard_check();
+    test_parser_hard_check();
 
     std::cout << "All TJsonValue tests passed successfully! You are breathtaking!" << std::endl;
     return 0;

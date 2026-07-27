@@ -86,27 +86,27 @@ namespace NJson::NError {
 
     class TJsonParserErrorExtraData : public TJsonParserError {
     public:
-        explicit TJsonParserErrorExtraData(std::string_view);
+        explicit TJsonParserErrorExtraData(size_t pos, std::string_view);
     };
 
     class TJsonParserErrorInvalidToken : public TJsonParserError {
     public:
-        explicit TJsonParserErrorInvalidToken(std::string_view);
+        explicit TJsonParserErrorInvalidToken(size_t pos, std::string_view);
     };
 
     class TJsonParserErrorMissingData : public TJsonParserError {
     public:
-        explicit TJsonParserErrorMissingData(std::string_view);
+        explicit TJsonParserErrorMissingData(size_t pos, std::string_view);
     };
 
     class TJsonParserErrorUnexpectedEof : public TJsonParserError {
     public:
-        explicit TJsonParserErrorUnexpectedEof(std::string_view);
+        explicit TJsonParserErrorUnexpectedEof(size_t pos, std::string_view);
     };
 
     class TJsonParserErrorDuplicateKey : public TJsonParserError {
     public:
-        explicit TJsonParserErrorDuplicateKey(std::string_view);
+        explicit TJsonParserErrorDuplicateKey(size_t pos, std::string_view);
     };
 
 } // namespace NJson::NError

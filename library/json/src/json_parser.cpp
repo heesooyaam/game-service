@@ -15,14 +15,6 @@ namespace NJson::NDetail {
     }
 }
 
-namespace {
-
-    std::string error_info(size_t pos, std::string_view msg) {
-        return std::format("JSON parse error at byte {}; {}", pos, msg); 
-    }
-
-}
-
 namespace NJson {
 
     TJsonValue parse(std::string_view data) {
@@ -65,7 +57,7 @@ namespace NJson {
         skip_space();
 
         if (!is_eof()) {
-            throw NError::TJsonParserErrorExtraData(error_info(pos_, data_.substr(pos_))); 
+            throw NError::TJsonParserErrorExtraData(pos_, data_.substr(pos_)); 
         }
 
         return json;
@@ -106,10 +98,18 @@ namespace NJson {
     TJsonValue TJsonParser::parse_value() {
         assert(!is_eof() && !NDetail::is_json_whitespace(peek()));
         switch (peek()) {
-            case OPEN_STRING: return parse_string();
-            case OPEN_ARRAY: return parse_array();
-            case OPEN_OBJECT: return parse_object();
-            default: return parse_simple_value();
+            case OPEN_STRING: {
+                return parse_string();
+            }
+            case OPEN_ARRAY: {
+                return parse_array();
+            }
+            case OPEN_OBJECT: {
+                return parse_object();
+            }
+            default: {
+                return parse_simple_value();
+            }
         }   
     }
 
@@ -123,7 +123,6 @@ namespace NJson {
         } else if (substr == "false") {
             return TJsonValue(false);
         } else {
-
             bool bad_number = false;
             if (substr.size() > 1) {
                 if (substr[0] == '0' && std::isdigit(static_cast<unsigned char>(substr[1]))) {
@@ -138,7 +137,7 @@ namespace NJson {
             auto opt_integer = NCommon::parse_number<TInteger>(substr);
             if (opt_integer.has_value()) {
                 if (bad_number) {
-                    throw NError::TJsonParserErrorInvalidToken(error_info(pos_, "leading zeros are not allowed in parsing number"));
+                    throw NError::TJsonParserErrorInvalidToken(pos_, "leading zeros are not allowed in parsing number");
                 }
                 return TJsonValue(opt_integer.value());
             }
@@ -146,19 +145,19 @@ namespace NJson {
             auto opt_double = NCommon::parse_number<TDouble>(substr);
             if (opt_double.has_value()) {
                 if (bad_number) {
-                    throw NError::TJsonParserErrorInvalidToken(error_info(pos_, "leading zeros are not allowed in parsing number"));
+                    throw NError::TJsonParserErrorInvalidToken(pos_, "leading zeros are not allowed in parsing number");
                 }
                 return TJsonValue(opt_double.value());
             }
         }
 
-        throw NError::TJsonParserErrorInvalidToken(error_info(pos_ - substr.size(), substr));
+        throw NError::TJsonParserErrorInvalidToken(pos_ - substr.size(), substr);
     }
 
 
     TJsonValue TJsonParser::parse_string() {
         if (peek() != OPEN_STRING) {
-            throw NError::TJsonParserErrorMissingData(error_info(pos_, std::format("parsing string, miss {}", OPEN_STRING)));
+            throw NError::TJsonParserErrorMissingData(pos_, std::format("parsing string, miss {}", OPEN_STRING));
         }
 
         TString str;
@@ -167,44 +166,52 @@ namespace NJson {
             if (peek() == '\\') {
                 ++pos_;
                 if (is_eof()) {
-                    throw NError::TJsonParserErrorInvalidToken(error_info(pos_, std::string("parsing string, one \\")));
+                    throw NError::TJsonParserErrorInvalidToken(pos_, std::string("parsing string, one \\"));
                 }
 
                 char escaped_char = peek();
                 switch (escaped_char) {
-                    case '"':  
+                    case '"': {
                         str.push_back('"'); 
                         break;  
-                    case '\\': 
+                    }
+                    case '\\': {
                         str.push_back('\\'); 
                         break; 
-                    case '/':  
+                    }
+                    case '/': {
                         str.push_back('/'); 
                         break;  
-                    case 'b':  
+                    }
+                    case 'b': {
                         str.push_back('\b'); 
                         break; 
-                    case 'f':  
+                    }
+                    case 'f': {
                         str.push_back('\f'); 
                         break; 
-                    case 'n':  
+                    }
+                    case 'n': {
                         str.push_back('\n'); 
                         break; 
-                    case 'r':  
+                    }
+                    case 'r': {
                         str.push_back('\r'); 
                         break; 
-                    case 't':  
+                    }
+                    case 't': {
                         str.push_back('\t'); 
                         break; 
-                    default:
-                        throw NError::TJsonParserErrorInvalidToken(error_info(pos_, std::string("parsing string, bad \\")));
                     }
-
+                    default: {
+                        throw NError::TJsonParserErrorInvalidToken(pos_, std::string("parsing string, bad \\"));
+                    }
+                }
             } else {    
                 const auto character = static_cast<unsigned char>(peek());
 
                 if (character < 0x20) {
-                    throw NError::TJsonParserErrorInvalidToken(error_info(pos_,"unescaped control character in string"));
+                    throw NError::TJsonParserErrorInvalidToken(pos_,"unescaped control character in string");
                 }
 
                 str.push_back(peek());
@@ -212,7 +219,7 @@ namespace NJson {
         }
 
         if (is_eof()) {
-            throw NError::TJsonParserErrorUnexpectedEof(error_info(pos_, "parsing string"));
+            throw NError::TJsonParserErrorUnexpectedEof(pos_, "parsing string");
         }
 
         ++pos_;
@@ -231,18 +238,18 @@ namespace NJson {
                 if (peek() == COMMA) {
                     next();
                     if (!is_eof() && peek() == CLOSE_ARRAY) {
-                        throw NError::TJsonParserErrorInvalidToken(error_info(pos_, std::string("parsing array, bad comma")));
+                        throw NError::TJsonParserErrorInvalidToken(pos_, std::string("parsing array, bad comma"));
                     }
                 } else {
                     if (peek() != CLOSE_ARRAY) {
-                        throw NError::TJsonParserErrorMissingData(error_info(pos_, std::format("parsing array, miss {}", COMMA)));
+                        throw NError::TJsonParserErrorMissingData(pos_, std::format("parsing array, miss {}", COMMA));
                     }
                 }
             }
         }
 
         if (is_eof()) {
-            throw NError::TJsonParserErrorUnexpectedEof(error_info(pos_, "parsing array"));
+            throw NError::TJsonParserErrorUnexpectedEof(pos_, "parsing array");
         }
 
         ++pos_;
@@ -259,7 +266,7 @@ namespace NJson {
             skip_space();
             if (!is_eof()) {
                 if (peek() != COLON) {
-                    throw NError::TJsonParserErrorMissingData(error_info(pos_, std::format("parsing object, miss {}", COLON)));
+                    throw NError::TJsonParserErrorMissingData(pos_, std::format("parsing object, miss {}", COLON));
                 }
                 next();
                 if (!is_eof()) {
@@ -271,7 +278,7 @@ namespace NJson {
                     );
 
                     if (!inserted) {
-                        throw NError::TJsonParserErrorDuplicateKey(error_info(pos_, "Duplicate object key"));
+                        throw NError::TJsonParserErrorDuplicateKey(pos_, "Duplicate object key");
                     }
 
                     skip_space();
@@ -279,11 +286,11 @@ namespace NJson {
                         if (peek() == COMMA) {
                             next();
                             if (!is_eof() && peek() == CLOSE_OBJECT) {
-                                throw NError::TJsonParserErrorInvalidToken(error_info(pos_, std::string("parsing object, bad comma")));
+                                throw NError::TJsonParserErrorInvalidToken(pos_, std::string("parsing object, bad comma"));
                             }
                         } else {
                             if (peek() != CLOSE_OBJECT) {
-                                throw NError::TJsonParserErrorMissingData(error_info(pos_, std::format("parsing object, miss {}", COMMA)));
+                                throw NError::TJsonParserErrorMissingData(pos_, std::format("parsing object, miss {}", COMMA));
                             }
                         }
                     }
@@ -292,7 +299,7 @@ namespace NJson {
         }
 
         if (is_eof()) {
-            throw NError::TJsonParserErrorUnexpectedEof(error_info(pos_,"parsing object"));
+            throw NError::TJsonParserErrorUnexpectedEof(pos_,"parsing object");
         }
 
         ++pos_;

@@ -4,6 +4,14 @@
 
 #include <format>
 
+namespace {
+
+    std::string error_info(size_t pos, std::string_view msg) {
+        return std::format("JSON parse error at byte {}; {}", pos, msg); 
+    }
+
+}
+
 namespace NJson::NError {
 
     TJsonError::TJsonError(std::string_view label, std::string_view msg)
@@ -77,50 +85,50 @@ namespace NJson::NError {
         )
     {}  
 
-    TJsonParserErrorExtraData::TJsonParserErrorExtraData(std::string_view extra_data)
+    TJsonParserErrorExtraData::TJsonParserErrorExtraData(size_t pos, std::string_view msg)
         : TJsonParserError(
             "JSON PARSER ERROR",
             std::format(
                 "Extra Data in document( {} )",
-                extra_data
+                error_info(pos, msg)
             )
         )
     {}
 
-    TJsonParserErrorInvalidToken::TJsonParserErrorInvalidToken(std::string_view msg)
+    TJsonParserErrorInvalidToken::TJsonParserErrorInvalidToken(size_t pos, std::string_view msg)
         : TJsonParserError(
             "JSON PARSER ERROR",
             std::format(
                 "Invalid Token( {} )",
-                msg
+                error_info(pos, msg)
             )
         )
     {}
 
-    TJsonParserErrorMissingData::TJsonParserErrorMissingData(std::string_view msg)
+    TJsonParserErrorMissingData::TJsonParserErrorMissingData(size_t pos, std::string_view msg)
         : TJsonParserError(
             "JSON PARSER ERROR",
             std::format(
                 "Missed data ( {} )",
-                msg
+                error_info(pos, msg)
             )
         )
     {}
 
-    TJsonParserErrorUnexpectedEof::TJsonParserErrorUnexpectedEof(std::string_view msg)
+    TJsonParserErrorUnexpectedEof::TJsonParserErrorUnexpectedEof(size_t pos, std::string_view msg)
         : TJsonParserError(
             "JSON PARSER ERROR",
             std::format(
                 "Unexpected Eof ( {} )",
-                msg
+                error_info(pos, msg)
             )
         )
     {}
 
-    TJsonParserErrorDuplicateKey::TJsonParserErrorDuplicateKey(std::string_view msg)
+    TJsonParserErrorDuplicateKey::TJsonParserErrorDuplicateKey(size_t pos, std::string_view msg)
         : TJsonParserError(
             "JSON PARSER ERROR",
-            msg
+            error_info(pos, msg)
         )
     {}
 

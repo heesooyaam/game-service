@@ -248,6 +248,6 @@ int main() {
 
     test_parser_hard_check();
 
-    std::cout << "All TJsonValue tests passed successfully! You are breathtaking!" << std::endl;
+    std::cout << "All TJsonParser tests passed successfully! You are breathtaking!" << std::endl;
     return 0;
 }

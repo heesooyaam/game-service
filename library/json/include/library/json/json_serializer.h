@@ -2,12 +2,13 @@
 
 #include <library/json/json_value.h>
 
+#include <ostream>
+
 namespace NJson {
 
-    template <typename TOstream>
     class TJsonSerializer {
     public:
-        explicit TJsonSerializer(const TJsonValue&, TOstream&);
+        explicit TJsonSerializer(const TJsonValue&, std::ostream&);
         void serialize();
 
     private:
@@ -23,14 +24,9 @@ namespace NJson {
     
     private:
         const TJsonValue& json_;
-        TOstream& ostream_;
+        std::ostream& ostream_;
     };
 
-    template <typename TOstream>
-    TOstream& operator<<(TOstream&, const TJsonValue&);
+    std::ostream& operator<<(std::ostream&, const TJsonValue&);
 
 } //namespace NJson
-
-#define LIBRARY_JSON_SERIALIZER_H
-#include <library/json/detail/json_serializer-inl.h>
-#undef LIBRARY_JSON_SERIALIZER_H

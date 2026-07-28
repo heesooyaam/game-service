@@ -2,6 +2,7 @@
 #include <library/json/json_value.h>
 #include <library/json/json_parser.h>
 
+#include <cassert>
 #include <iostream>
 #include <sstream>
 #include <cstdlib>
@@ -24,7 +25,7 @@ namespace NJson::NTests {
     // Вспомогательная функция для удобной сериализации в строку
     std::string serialize_to_string(const TJsonValue& json_value) {
         std::ostringstream oss;
-        TJsonSerializer<std::ostringstream> serializer(json_value, oss);
+        TJsonSerializer serializer(json_value, oss);
         serializer.serialize(); // или .serialize() в зависимости от API
         std::cout << oss.str() << std::endl;
         return oss.str();

@@ -62,6 +62,23 @@ namespace {
         return result;
     }
 
+    std::string sanitize_double(double value) {
+        constexpr size_t buf_size = 32;
+        char buf[buf_size];
+        
+        std::to_chars_result result = std::to_chars(buf, buf + buf_size, value);
+        assert(result.ec == std::errc());
+        
+        std::string str(buf, result.ptr - buf);
+
+        
+        if (str.find('.') == std::string::npos && str.find('e') == std::string::npos) {
+            str += std::string(".0");
+        }
+
+        return str;
+    }
+
 }
 
 namespace NJson {
@@ -106,7 +123,7 @@ namespace NJson {
     }
 
     void TJsonSerializer::serialize_double(const TJsonValue& json) {
-        ostream_ << std::to_string(json.get_double());
+        ostream_ << sanitize_double(json.get_double());
     }
 
     void TJsonSerializer::serialize_boolean(const TJsonValue& json) {

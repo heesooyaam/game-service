@@ -55,8 +55,7 @@ namespace NJson::NTests {
 
     void test_serializes_double() {
         TJsonValue json_double(3.1415);
-        std::string expected = std::to_string(3.1415);
-        check(serialize_to_string(json_double) == expected);
+        check(serialize_to_string(json_double) == "3.1415");
     }
 
     void test_serializes_boolean() {

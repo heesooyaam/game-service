@@ -21,6 +21,7 @@ void check(bool value) {
 }
 
 namespace {
+    
     void check_throws(std::string_view bad_json) {
         bool caught_error = false;
         try {

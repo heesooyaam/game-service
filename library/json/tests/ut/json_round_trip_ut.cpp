@@ -33,10 +33,17 @@ namespace NJson::NTests {
 
     void run_round_trip_tests(const std::vector<std::string>& cases) {
         for (const std::string& raw_json : cases) {
-            TJsonValue original_val = parse(raw_json);
-            std::string serialized_text = serialize_to_string(original_val);
-            TJsonValue parsed_val = parse(serialized_text);
-            check(parsed_val == original_val);
+            TJsonValue original_val1 = parse(raw_json);
+            TJsonValue original_val2 = parse(raw_json);
+            std::string serialized_text1 = serialize_to_string(original_val1);
+            std::string serialized_text2 = serialize_to_string(original_val2);
+            TJsonValue parsed_val1 = parse(serialized_text1);
+            TJsonValue parsed_val2 = parse(serialized_text2);
+            check(parsed_val1 == original_val1);
+            check(parsed_val2 == original_val2);
+            check(parsed_val1 == parsed_val2);
+            check(original_val1 == original_val2);
+            check(serialized_text1 == serialized_text2);
         }
     }
 

@@ -133,4 +133,11 @@ namespace NJson::NError {
         )
     {}
 
+    TJsonSerializerError::TJsonSerializerError(std::string_view msg) 
+        : TJsonError(
+            "JSON SERIALIZER ERROR",
+            msg
+        )
+    {}
+
 } // namespace NJson::NError

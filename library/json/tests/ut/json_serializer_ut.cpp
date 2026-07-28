@@ -421,6 +421,17 @@ namespace NJson::NTests {
             check(parsed_val == original_val);
         }
     }
+
+    void test_character_in_string() {
+        TJsonValue json = std::string(1, '\0');
+        bool thrown = false;
+        try {
+            std::string serialized_text = serialize_to_string(json);
+        } catch(const NError::TJsonSerializerError&) {
+            thrown = true;
+        }
+        check(thrown);
+    }
     
 } //namespace NJson::NTests
 
@@ -468,6 +479,8 @@ int main() {
     test_parser_serializer_deep_nesting_pretty();
 
     test_json_string_serialization();
+
+    test_character_in_string();
         
     std::cout << "All JSON serializer tests passed successfully!\n";
 }

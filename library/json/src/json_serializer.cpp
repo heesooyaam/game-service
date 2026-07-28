@@ -54,6 +54,11 @@ namespace {
                     break; 
                 }
                 default: {
+
+                    if (static_cast<unsigned char>(symbol) < 0x20) {
+                        throw NJson::NError::TJsonSerializerError("unescaped control character in string");
+                    }
+
                     result.push_back(symbol);
                 }
             }

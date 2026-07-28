@@ -205,7 +205,7 @@ namespace NJson {
                 const auto character = static_cast<unsigned char>(peek());
 
                 if (character < 0x20) {
-                    throw NError::TJsonParserErrorInvalidToken(pos_,"unescaped control character in string");
+                    throw NError::TJsonParserErrorInvalidToken(pos_, "unescaped control character in string");
                 }
 
                 str.push_back(peek());

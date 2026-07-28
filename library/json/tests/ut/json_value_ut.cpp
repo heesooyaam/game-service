@@ -1,7 +1,6 @@
 #include <library/json/error.h>
 #include <library/json/json_value.h>
 
-#include <cassert>
 #include <cctype>
 #include <cstdlib>
 #include <iostream>
@@ -384,26 +383,21 @@ namespace NJson::NTests {
         
         TJsonValue json(std::move(root));
 
-        // ПУСТОЙ ПУТЬ
         check(json.get_value_by_path("") == json);
         const TJsonValue& const_json = json;
         check(const_json.get_value_by_path("") == json);
 
         check(std::addressof(json.get_and_create_value_by_path("")) == std::addressof(json));
 
-        // Корректный доступ по пути
         check(json.get_value_by_path("/users/0/id").get_integer() == 1);
         check(json.get_value_by_path("/users/1/name").get_string() == "Bob");
         check(json.get_value_by_path("/metadata/count").get_integer() == 2);
 
-        // Проверка константного доступа
         check(const_json.get_value_by_path("/users/0/name").get_string() == "Alice");
 
-        // Объект со строковым ключом, который выглядит как число
         TJsonValue dict = TObject{{"0", "zero_key_value"}};
         check(dict.get_value_by_path("/0").get_string() == "zero_key_value");
 
-        // Исключения
         bool thrown = false;
         try { json.get_value_by_path("users/0"); } 
         catch (const NError::TJsonBadPath&) { thrown = true; }
@@ -428,30 +422,24 @@ namespace NJson::NTests {
     void test_get_and_create_value_by_path() {
         TJsonValue json = TNull{};
 
-        // ПУСТОЙ ПУТЬ
         check(json.get_and_create_value_by_path("") == json);
         check(std::addressof(json.get_and_create_value_by_path("")) == std::addressof(json));
 
-        // Базовое создание иерархии
         json.get_and_create_value_by_path("/config/server/port") = 8080;
         check(json.is_object());
         check(json.get_value_by_path("/config/server/port").get_integer() == 8080);
 
-        // Добавление в уже существующий объект
         json.get_and_create_value_by_path("/config/server/host") = "localhost";
         check(json.get_value_by_path("/config/server/host").get_string() == "localhost");
 
-        // Автоматическое создание
         json.get_and_create_value_by_path("/items/0") = "first";
         check(json.get_value_by_path("/items").is_object()); 
         check(json.get_value_by_path("/items/0").get_string() == "first");
 
-        // Мутация существующего массива по индексу
         json.get_and_create_value_by_path("/real_array") = TArray{TJsonValue(10), TJsonValue(20)};
         json.get_and_create_value_by_path("/real_array/1") = 99;
         check(json.get_value_by_path("/real_array/1").get_integer() == 99);
 
-        // Исключение
         bool thrown = false;
         try { json.get_and_create_value_by_path("/config/server/port/value"); } 
         catch (const NError::TJsonTypeError&) { thrown = true; }
@@ -498,7 +486,7 @@ namespace NJson::NTests {
     void test_numeric_edge_cases() {
         bool thrown = false;
 
-        // 1. Тест переполнения целого числа
+        // 1. Integer overflow test
         thrown = false;
         try {
             TJsonValue val = std::numeric_limits<std::uint64_t>::max();
@@ -540,7 +528,6 @@ namespace NJson::NTests {
         TJsonValue valid_double = std::numeric_limits<double>::max();
         check(valid_double.get_double() == std::numeric_limits<double>::max());
 
-        // 5. Тест оператора присваивания
         TJsonValue assign_val;
         
         thrown = false;
@@ -583,7 +570,7 @@ int main() {
 
     test_exception_text();
     test_numeric_edge_cases(); 
-
-    std::cout << "All TJsonValue tests passed successfully! You are breathtaking!" << std::endl;
+    
+    std::cout << "All JSON value tests passed successfully!" << std::endl;
     return 0;
 }

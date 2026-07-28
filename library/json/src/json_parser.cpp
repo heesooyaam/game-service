@@ -1,9 +1,10 @@
 #include <library/json/error.h>
-#include <library/json/json_constants.h>
 #include <library/json/json_parser.h>
 #include <library/json/json_value.h>
+
 #include <library/common/parse_number.h>
-#include <library/json/json_constants.h>
+
+#include "json_constants.h"
 
 #include <array>
 #include <algorithm>

@@ -1,38 +1,47 @@
+#include <library/json/json_parser.h>
 #include <library/json/json_serializer.h>
 #include <library/json/json_value.h>
-#include <library/json/json_parser.h>
 
-#include <cassert>
+#include <cstdlib>
 #include <iostream>
 #include <sstream>
-#include <cstdlib>
 #include <string>
 
-namespace NJson::NTests {
-
-    constexpr void static_check(bool value) {
-        if (!value) {
-            std::exit(EXIT_FAILURE);
-        }
+constexpr void static_check(bool value) {
+    if (!value) {
+        std::exit(EXIT_FAILURE);
     }
+}
 
-    void check(bool value) {
-        if (!value) {
-            std::exit(EXIT_FAILURE);
-        }
+void check(bool value) {
+    if (!value) {
+        std::exit(EXIT_FAILURE);
     }
+}
 
-    // Вспомогательная функция для удобной сериализации в строку
-    std::string serialize_to_string(const TJsonValue& json_value) {
+namespace {
+
+    std::string serialize_to_string(const NJson::TJsonValue& json_value) {
         std::ostringstream oss;
-        TJsonSerializer serializer(json_value, oss);
-        serializer.serialize(); // или .serialize() в зависимости от API
+        NJson::TJsonSerializer serializer(json_value, oss, NJson::EJsonFormat::Compact);
+        serializer.serialize();
         std::cout << oss.str() << std::endl;
         return oss.str();
     }
 
+    std::string serialize_to_string_pretty(const NJson::TJsonValue& json_value) {
+        std::ostringstream oss;
+        NJson::TJsonSerializer serializer(json_value, oss, NJson::EJsonFormat::Pretty);
+        serializer.serialize();
+        return oss.str();
+    }
+
+}
+
+namespace NJson::NTests {
+
     void test_serializes_null() {
-        TJsonValue json_null; // или TJsonValue::Null() в зависимости от твоего API
+        TJsonValue json_null; 
         check(serialize_to_string(json_null) == "null");
     }
 
@@ -46,7 +55,6 @@ namespace NJson::NTests {
 
     void test_serializes_double() {
         TJsonValue json_double(3.1415);
-        // Сравниваем с std::to_string, так как в твоем коде используется именно он
         std::string expected = std::to_string(3.1415);
         check(serialize_to_string(json_double) == expected);
     }
@@ -66,7 +74,7 @@ namespace NJson::NTests {
     }
 
     void test_serializes_empty_array() {
-        TJsonValue json_array = TArray(); // адаптация под твой способ создания пустого массива
+        TJsonValue json_array = TArray();
         check(serialize_to_string(json_array) == "[]");
     }
 
@@ -92,7 +100,6 @@ namespace NJson::NTests {
         TJsonValue json_obj(obj);
 
         std::string result = serialize_to_string(json_obj);
-        // Проверяем оба варианта порядка ключей, так как хэш-таблицы не гарантируют порядок
         bool is_ok = (result == "{\"key1\":\"value1\",\"key2\":123}" || 
                       result == "{\"key2\":123,\"key1\":\"value1\"}");
         check(is_ok);
@@ -129,61 +136,53 @@ namespace NJson::NTests {
         TJsonValue json_doc(obj);
 
         auto val = parse(serialize_to_string(json_doc));
-        assert(val == json_doc);
+        check(val == json_doc);
     }
 
     void test_parser_serializer_null() {
-        TJsonValue json_null; // Инициализация null по умолчанию
+        TJsonValue json_null;
         auto val = parse(serialize_to_string(json_null));
-        assert(val == json_null);
+        check(val == json_null);
     }
 
-    // 2. Тесты для булевых значений
     void test_parser_serializer_boolean() {
         TJsonValue json_true(true);
-        assert(parse(serialize_to_string(json_true)) == json_true);
+        check(parse(serialize_to_string(json_true)) == json_true);
 
         TJsonValue json_false(false);
-        assert(parse(serialize_to_string(json_false)) == json_false);
+        check(parse(serialize_to_string(json_false)) == json_false);
     }
 
-    // 3. Тесты для чисел (целые и с плавающей точкой)
     void test_parser_serializer_numbers() {
         TJsonValue json_int(42);
-        assert(parse(serialize_to_string(json_int)) == json_int);
+        check(parse(serialize_to_string(json_int)) == json_int);
 
         TJsonValue json_negative(-999);
-        assert(parse(serialize_to_string(json_negative)) == json_negative);
+        check(parse(serialize_to_string(json_negative)) == json_negative);
 
-        // Для double лучше использовать числа, которые точно представляются в двоичном виде,
-        // чтобы избежать проблем с точностью при строгом сравнении через ==
         TJsonValue json_double(3.5); 
-        assert(parse(serialize_to_string(json_double)) == json_double);
+        check(parse(serialize_to_string(json_double)) == json_double);
     }
 
-    // 4. Тесты для строк (включая пустую строку)
     void test_parser_serializer_strings() {
         TJsonValue json_str("hello world");
-        assert(parse(serialize_to_string(json_str)) == json_str);
+        check(parse(serialize_to_string(json_str)) == json_str);
 
         TJsonValue json_empty_str("");
-        assert(parse(serialize_to_string(json_empty_str)) == json_empty_str);
+        check(parse(serialize_to_string(json_empty_str)) == json_empty_str);
 
-        // Строка со спецсимволами (если ваш парсер поддерживает экранирование)
-        TJsonValue json_escaped(R"(line1\nline2\t\"quoted\")");
-        assert(parse(serialize_to_string(json_escaped)) == "line1\nline2\t\"quoted\"");
+        TJsonValue json_escaped("line1\nline2\t\"quoted\"");
+        check(parse(serialize_to_string(json_escaped)) == json_escaped);
     }
 
-    // 5. Тесты для пустых коллекций
     void test_parser_serializer_empty_structures() {
-        TJsonValue json_empty_arr((TArray())); // Скобки нужны, чтобы избежать vexing parse
-        assert(parse(serialize_to_string(json_empty_arr)) == json_empty_arr);
+        TJsonValue json_empty_arr((TArray()));
+        check(parse(serialize_to_string(json_empty_arr)) == json_empty_arr);
 
         TJsonValue json_empty_obj((TObject()));
-        assert(parse(serialize_to_string(json_empty_obj)) == json_empty_obj);
+        check(parse(serialize_to_string(json_empty_obj)) == json_empty_obj);
     }
 
-    // 6. Тест для массива с разными типами данных (Mixed Array)
     void test_parser_serializer_mixed_array() {
         TArray arr;
         arr.push_back(TJsonValue("string"));
@@ -193,10 +192,9 @@ namespace NJson::NTests {
         
         TJsonValue json_doc(arr);
         auto val = parse(serialize_to_string(json_doc));
-        assert(val == json_doc);
+        check(val == json_doc);
     }
 
-    // 7. Тест для глубоко вложенных объектов (Deeply Nested)
     void test_parser_serializer_deep_nesting() {
         TObject level_3;
         level_3["target"] = TJsonValue("found me");
@@ -207,7 +205,6 @@ namespace NJson::NTests {
         TObject level_1;
         level_1["nested_obj"] = TJsonValue(level_2);
         
-        // Добавим еще и массив внутрь корневого объекта
         TArray arr;
         arr.push_back(TJsonValue(1));
         level_1["numbers"] = TJsonValue(arr);
@@ -215,21 +212,19 @@ namespace NJson::NTests {
         TJsonValue json_doc(level_1);
 
         auto val = parse(serialize_to_string(json_doc));
-        assert(val == json_doc);
+        check(val == json_doc);
     }
 
 
-    // 1. Тест простого значения (число)
     void test_ostream_operator_simple() {
         TJsonValue json_int(42);
         std::ostringstream oss;
         
-        oss << json_int; // Вызов нашего оператора
+        oss << json_int;
         
         check(oss.str() == "42");
     }
 
-    // 2. Тест сложной структуры (объект)
     void test_ostream_operator_complex() {
         TObject obj;
         obj["key"] = TJsonValue("value");
@@ -241,59 +236,45 @@ namespace NJson::NTests {
         check(oss.str() == "{\"key\":\"value\"}");
     }
 
-    // 3. Тест цепочки вызовов (Chaining) — самое важное для operator<<
     void test_ostream_operator_chaining() {
         TJsonValue json_true(true);
         std::ostringstream oss;
         
-        // Проверяем, что оператор возвращает TOstream& и позволяет продолжать вывод
         oss << "JSON result is: " << json_true << " (end)";
         
         check(oss.str() == "JSON result is: true (end)");
     }
 
-    // 4. Тест с другим типом потока (std::stringstream), 
-    // чтобы убедиться, что шаблон <typename TOstream> работает корректно
     void test_ostream_operator_template_resolution() {
-        TJsonValue json_null; // Предполагается, что по умолчанию это null
-        std::stringstream ss; // Используем stringstream вместо ostringstream
+        TJsonValue json_null;
+        std::stringstream ss; 
         
         ss << json_null;
         
         check(ss.str() == "null");
     }
 
-    std::string serialize_to_string_normal(const TJsonValue& json_value) {
-        std::ostringstream oss;
-        TJsonSerializer serializer(json_value, oss);
-        serializer.serialize_normal_mode();
-        return oss.str();
+    void test_pretty_mode_primitives() {
+        check(serialize_to_string_pretty(TJsonValue()) == "null");
+        check(serialize_to_string_pretty(TJsonValue(42)) == "42");
+        check(serialize_to_string_pretty(TJsonValue(true)) == "true");
+        check(serialize_to_string_pretty(TJsonValue("test")) == "\"test\"");
     }
 
-    void test_normal_mode_primitives() {
-        // Примитивы сериализуются одинаково в обоих режимах
-        check(serialize_to_string_normal(TJsonValue()) == "null");
-        check(serialize_to_string_normal(TJsonValue(42)) == "42");
-        check(serialize_to_string_normal(TJsonValue(true)) == "true");
-        check(serialize_to_string_normal(TJsonValue("test")) == "\"test\"");
-    }
-
-    void test_normal_mode_array() {
+    void test_pretty_mode_array() {
         TArray arr;
         arr.push_back(TJsonValue(1));
         arr.push_back(TJsonValue(2));
         arr.push_back(TJsonValue(3));
         
-        // В normal_mode после запятой должен быть пробел
-        check(serialize_to_string_normal(TJsonValue(arr)) == "[1, 2, 3]");
+        check(serialize_to_string_pretty(TJsonValue(arr)) == "[1, 2, 3]");
     }
 
-    void test_normal_mode_empty_object() {
-        // Пустой объект должен остаться {} без переносов
-        check(serialize_to_string_normal(TJsonValue(TObject())) == "{}");
+    void test_pretty_mode_empty_object() {
+        check(serialize_to_string_pretty(TJsonValue(TObject())) == "{}");
     }
 
-    void test_normal_mode_object() {
+    void test_pretty_mode_object() {
         TObject obj;
         obj["key"] = TJsonValue(42);
         
@@ -302,11 +283,10 @@ namespace NJson::NTests {
             "    \"key\" : 42\n"
             "}";
             
-        check(serialize_to_string_normal(TJsonValue(obj)) == expected);
+        check(serialize_to_string_pretty(TJsonValue(obj)) == expected);
     }
 
-    void test_normal_mode_nested_object() {
-        // Проверяем увеличение отступа (indent += 4) для вложенных структур
+    void test_pretty_mode_nested_object() {
         TObject inner_obj;
         inner_obj["inner_key"] = TJsonValue("value");
         
@@ -320,10 +300,11 @@ namespace NJson::NTests {
             "    }\n"
             "}";
             
-        check(serialize_to_string_normal(TJsonValue(outer_obj)) == expected);
+        check(serialize_to_string_pretty(TJsonValue(outer_obj)) == expected);
+        check(parse(expected) == TJsonValue(outer_obj));
     }
 
-    void test_normal_mode_object_with_array() {
+    void test_pretty_mode_object_with_array() {
         TArray arr;
         arr.push_back(TJsonValue(1));
         arr.push_back(TJsonValue(2));
@@ -336,75 +317,67 @@ namespace NJson::NTests {
             "    \"arr\" : [1, 2]\n"
             "}";
             
-        check(serialize_to_string_normal(TJsonValue(obj)) == expected);
+        check(serialize_to_string_pretty(TJsonValue(obj)) == expected);
+        check(parse(expected) == TJsonValue(obj));
     }
 
-    void test_parser_serializer_null_normal() {
-        TJsonValue json_null; // Инициализация null по умолчанию
-        auto val = parse(serialize_to_string_normal(json_null));
-        assert(val == json_null);
+    void test_parser_serializer_null_pretty() {
+        TJsonValue json_null; 
+        auto val = parse(serialize_to_string_pretty(json_null));
+        check(val == json_null);
     }
 
-    // 2. Тесты для булевых значений
-    void test_parser_serializer_boolean_normal() {
+    void test_parser_serializer_boolean_pretty() {
         TJsonValue json_true(true);
-        assert(parse(serialize_to_string_normal(json_true)) == json_true);
+        check(parse(serialize_to_string_pretty(json_true)) == json_true);
 
         TJsonValue json_false(false);
-        assert(parse(serialize_to_string_normal(json_false)) == json_false);
+        check(parse(serialize_to_string_pretty(json_false)) == json_false);
     }
 
-    // 3. Тесты для чисел (целые и с плавающей точкой)
-    void test_parser_serializer_numbers_normal() {
+    void test_parser_serializer_numbers_pretty() {
         TJsonValue json_int(42);
-        assert(parse(serialize_to_string_normal(json_int)) == json_int);
+        check(parse(serialize_to_string_pretty(json_int)) == json_int);
 
         TJsonValue json_negative(-999);
-        assert(parse(serialize_to_string_normal(json_negative)) == json_negative);
+        check(parse(serialize_to_string_pretty(json_negative)) == json_negative);
 
-        // Для double лучше использовать числа, которые точно представляются в двоичном виде,
-        // чтобы избежать проблем с точностью при строгом сравнении через ==
         TJsonValue json_double(3.5); 
-        assert(parse(serialize_to_string_normal(json_double)) == json_double);
+        check(parse(serialize_to_string_pretty(json_double)) == json_double);
     }
 
-    // 4. Тесты для строк (включая пустую строку)
-    void test_parser_serializer_strings_normal() {
+    void test_parser_serializer_strings_pretty() {
         TJsonValue json_str("hello world");
-        assert(parse(serialize_to_string_normal(json_str)) == json_str);
+        check(parse(serialize_to_string_pretty(json_str)) == json_str);
 
         TJsonValue json_empty_str("");
-        assert(parse(serialize_to_string_normal(json_empty_str)) == json_empty_str);
+        check(parse(serialize_to_string_pretty(json_empty_str)) == json_empty_str);
 
-        // Строка со спецсимволами (если ваш парсер поддерживает экранирование)
-        TJsonValue json_escaped(R"(line1\nline2\t\"quoted\")");
-        assert(parse(serialize_to_string_normal(json_escaped)) == "line1\nline2\t\"quoted\"");
+        TJsonValue json_escaped("line1\nline2\t\"quoted\"");
+        check(parse(serialize_to_string_pretty(json_escaped)) == "line1\nline2\t\"quoted\"");
     }
 
-    // 5. Тесты для пустых коллекций
-    void test_parser_serializer_empty_structures_normal() {
-        TJsonValue json_empty_arr((TArray())); // Скобки нужны, чтобы избежать vexing parse
-        assert(parse(serialize_to_string_normal(json_empty_arr)) == json_empty_arr);
+    void test_parser_serializer_empty_structures_pretty() {
+        TJsonValue json_empty_arr((TArray())); 
+        check(parse(serialize_to_string_pretty(json_empty_arr)) == json_empty_arr);
 
         TJsonValue json_empty_obj((TObject()));
-        assert(parse(serialize_to_string_normal(json_empty_obj)) == json_empty_obj);
+        check(parse(serialize_to_string_pretty(json_empty_obj)) == json_empty_obj);
     }
 
-    // 6. Тест для массива с разными типами данных (Mixed Array)
-    void test_parser_serializer_mixed_array_normal() {
+    void test_parser_serializer_mixed_array_pretty() {
         TArray arr;
         arr.push_back(TJsonValue("string"));
         arr.push_back(TJsonValue(100));
         arr.push_back(TJsonValue(false));
-        arr.push_back(TJsonValue()); // null
+        arr.push_back(TJsonValue()); 
         
         TJsonValue json_doc(arr);
-        auto val = parse(serialize_to_string_normal(json_doc));
-        assert(val == json_doc);
+        auto val = parse(serialize_to_string_pretty(json_doc));
+        check(val == json_doc);
     }
 
-    // 7. Тест для глубоко вложенных объектов (Deeply Nested)
-    void test_parser_serializer_deep_nesting_normal() {
+    void test_parser_serializer_deep_nesting_pretty() {
         TObject level_3;
         level_3["target"] = TJsonValue("found me");
 
@@ -414,18 +387,42 @@ namespace NJson::NTests {
         TObject level_1;
         level_1["nested_obj"] = TJsonValue(level_2);
         
-        // Добавим еще и массив внутрь корневого объекта
         TArray arr;
         arr.push_back(TJsonValue(1));
         level_1["numbers"] = TJsonValue(arr);
 
         TJsonValue json_doc(level_1);
 
-        auto val = parse(serialize_to_string_normal(json_doc));
-        assert(val == json_doc);
+        auto val = parse(serialize_to_string_pretty(json_doc));
+        check(val == json_doc);
+    }
+
+    void test_json_string_serialization() {
+        std::vector<std::string> test_cases = {
+            "simple plain text",
+            "", 
+            "12345", 
+            "He said: \"Hello!\"",
+            "\"Start and end with quotes\"",
+            "C:\\Users\\Default\\Desktop",
+            "\\\\server\\share\\folder",
+            "First line\nSecond line\tWith indent",
+            "Ends with newline\n",
+            "\"\\\b\f\n\r\t/", 
+            "{\"key\": \"value\", \"array\": [1, 2, 3]}"
+        };
+
+        for (const std::string& original_str : test_cases) {
+            TJsonValue original_val(original_str);
+            
+            std::string serialized_text = serialize_to_string(original_val);
+            
+            TJsonValue parsed_val = parse(serialized_text);
+            
+            check(parsed_val == original_val);
+        }
     }
     
-
 } //namespace NJson::NTests
 
 int main() {
@@ -456,21 +453,22 @@ int main() {
     test_ostream_operator_chaining();
     test_ostream_operator_template_resolution();
         
-    // Запуск тестов для normal_mode
-    test_normal_mode_primitives();
-    test_normal_mode_array();
-    test_normal_mode_empty_object();
-    test_normal_mode_object();
-    test_normal_mode_nested_object();
-    test_normal_mode_object_with_array();
+    test_pretty_mode_primitives();
+    test_pretty_mode_array();
+    test_pretty_mode_empty_object();
+    test_pretty_mode_object();
+    test_pretty_mode_nested_object();
+    test_pretty_mode_object_with_array();
 
-    test_parser_serializer_null_normal();
-    test_parser_serializer_boolean_normal();
-    test_parser_serializer_numbers_normal();
-    test_parser_serializer_strings_normal();
-    test_parser_serializer_empty_structures_normal();
-    test_parser_serializer_mixed_array_normal();
-    test_parser_serializer_deep_nesting_normal();
+    test_parser_serializer_null_pretty();
+    test_parser_serializer_boolean_pretty();
+    test_parser_serializer_numbers_pretty();
+    test_parser_serializer_strings_pretty();
+    test_parser_serializer_empty_structures_pretty();
+    test_parser_serializer_mixed_array_pretty();
+    test_parser_serializer_deep_nesting_pretty();
+
+    test_json_string_serialization();
         
     std::cout << "All JSON serializer tests passed successfully!\n";
 }

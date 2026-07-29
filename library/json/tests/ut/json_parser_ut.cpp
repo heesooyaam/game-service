@@ -3,7 +3,6 @@
 #include <library/json/json_value.h>
 #include <library/common/parse_number.h>
 
-#include <cassert>
 #include <cctype>
 #include <cstdlib>
 #include <iostream>
@@ -18,6 +17,23 @@ constexpr void static_check(bool value) {
 void check(bool value) {
     if (!value) {
         std::exit(EXIT_FAILURE);
+    }
+}
+
+namespace {
+    
+    void check_throws(std::string_view bad_json) {
+        bool caught_error = false;
+        try {
+            NJson::TJsonParser(bad_json).parse();
+        } catch (const NJson::NError::TJsonParserError&) {
+            caught_error = true; 
+        }
+        
+        if (!caught_error) {
+            std::cerr << "TEST FAILED: Parser should have thrown on: " << bad_json << "\n";
+        }
+        check(caught_error);
     }
 }
 
@@ -37,7 +53,7 @@ namespace NJson::NTests {
         check(double_val.is_double());
         check(double_val.get_double() == -3.14);
 
-        auto str_val = TJsonParser("\"hello world\"").parse();
+        auto str_val = TJsonParser(R"("hello world")").parse();
         check(str_val.is_string());
         check(str_val.get_string() == "hello world");
     }
@@ -60,14 +76,14 @@ namespace NJson::NTests {
     }
 
     void test_parser_arrays_and_objects() {
-        auto arr = TJsonParser("[1, \"two\", false]").parse();
+        auto arr = TJsonParser(R"([1, "two", false])").parse();
         check(arr.is_array());
         check(arr.size() == 3);
         check(arr[0].get_integer() == 1);
         check(arr[1].get_string() == "two");
         check(arr[2].get_boolean() == false);
 
-        auto obj = TJsonParser("{\"key\": 42, \"empty\": {}}").parse();
+        auto obj = TJsonParser(R"({"key": 42, "empty": {}})").parse();
         check(obj.is_object());
         check(obj.contains("key"));
         check(obj["key"].get_integer() == 42);
@@ -98,21 +114,6 @@ namespace NJson::NTests {
         check(TJsonParser("   \t\n true \r  ").parse().get_boolean() == true);
     }
     
-    // Вспомогательная функция для проверки исключений
-    void check_throws(std::string_view bad_json) {
-        bool caught_error = false;
-        try {
-            TJsonParser(bad_json).parse();
-        } catch (const NError::TJsonParserError&) {
-            caught_error = true; 
-        }
-        
-        if (!caught_error) {
-            std::cerr << "TEST FAILED: Parser should have thrown on: " << bad_json << "\n";
-        }
-        check(caught_error);
-    }
-
     void test_parser_number_edge_cases() {
         check(TJsonParser("0").parse().get_integer() == 0);
         check(TJsonParser("-42").parse().get_integer() == -42);
@@ -130,24 +131,24 @@ namespace NJson::NTests {
         auto deep_arr = TJsonParser("[[[[42]]]]").parse();
         check(deep_arr[0][0][0][0].get_integer() == 42);
 
-        auto deep_obj = TJsonParser("{\"a\": {\"b\": {\"c\": \"d\"}}}").parse();
+        auto deep_obj = TJsonParser(R"({"a": {"b": {"c": "d"}}})").parse();
         check(deep_obj["a"]["b"]["c"].get_string() == "d");
     }
 
     void test_parser_invalid_json() {
-        check_throws("{\"a\": 1} 123");
+        check_throws(R"({"a": 1} 123)");
         check_throws("[1, 2] ]");
 
         check_throws("[1, 2,]");
-        check_throws("{\"a\": 1,}");
+        check_throws(R"({"a": 1,})");
 
         check_throws("[1, 2");
-        check_throws("{\"a\": 1");
-        check_throws("\"unclosed string");
+        check_throws(R"({"a": 1)");
+        check_throws(R"("unclosed string)");
 
         check_throws("{a: 1}");      
-        check_throws("{\"a\" 1}");    
-        check_throws("{\"a\": }");    
+        check_throws(R"({"a" 1})");    
+        check_throws(R"({"a": })");    
 
         check_throws("nulll");
         check_throws("tru");
@@ -248,6 +249,6 @@ int main() {
 
     test_parser_hard_check();
 
-    std::cout << "All TJsonParser tests passed successfully! You are breathtaking!" << std::endl;
+    std::cout << "All JSON parser tests passed successfully!" << std::endl;
     return 0;
 }

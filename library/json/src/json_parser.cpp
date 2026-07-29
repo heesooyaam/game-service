@@ -1,7 +1,10 @@
 #include <library/json/error.h>
 #include <library/json/json_parser.h>
 #include <library/json/json_value.h>
+
 #include <library/common/parse_number.h>
+
+#include "json_constants.h"
 
 #include <array>
 #include <algorithm>
@@ -21,24 +24,15 @@ namespace NJson {
         return TJsonParser(data).parse();
     }
 
-    constexpr char OPEN_OBJECT = '{';
-    constexpr char CLOSE_OBJECT = '}';
-    constexpr char OPEN_ARRAY = '[';
-    constexpr char CLOSE_ARRAY = ']';
-    constexpr char OPEN_STRING = '"';
-    constexpr char CLOSE_STRING = '"';
-    constexpr char COMMA = ',';
-    constexpr char COLON = ':';
-
     constexpr auto delimiters = std::array{
-        OPEN_OBJECT,
-        CLOSE_OBJECT,
-        OPEN_ARRAY,
-        CLOSE_ARRAY,
-        OPEN_STRING,
-        CLOSE_STRING,
-        COMMA,
-        COLON,
+        NConstants::OPEN_OBJECT,
+        NConstants::CLOSE_OBJECT,
+        NConstants::OPEN_ARRAY,
+        NConstants::CLOSE_ARRAY,
+        NConstants::OPEN_STRING,
+        NConstants::CLOSE_STRING,
+        NConstants::COMMA,
+        NConstants::COLON,
     };
 
     TJsonParser::TJsonParser(std::string_view data)
@@ -98,13 +92,13 @@ namespace NJson {
     TJsonValue TJsonParser::parse_value() {
         assert(!is_eof() && !NDetail::is_json_whitespace(peek()));
         switch (peek()) {
-            case OPEN_STRING: {
+            case NConstants::OPEN_STRING: {
                 return parse_string();
             }
-            case OPEN_ARRAY: {
+            case NConstants::OPEN_ARRAY: {
                 return parse_array();
             }
-            case OPEN_OBJECT: {
+            case NConstants::OPEN_OBJECT: {
                 return parse_object();
             }
             default: {
@@ -156,13 +150,13 @@ namespace NJson {
 
 
     TJsonValue TJsonParser::parse_string() {
-        if (peek() != OPEN_STRING) {
-            throw NError::TJsonParserErrorMissingData(pos_, std::format("parsing string, miss {}", OPEN_STRING));
+        if (peek() != NConstants::OPEN_STRING) {
+            throw NError::TJsonParserErrorMissingData(pos_, std::format("parsing string, miss {}", NConstants::OPEN_STRING));
         }
 
         TString str;
         ++pos_;
-        for (; !is_eof() && peek() != CLOSE_STRING; ++pos_) {
+        for (; !is_eof() && peek() != NConstants::CLOSE_STRING; ++pos_) {
             if (peek() == '\\') {
                 ++pos_;
                 if (is_eof()) {
@@ -211,7 +205,7 @@ namespace NJson {
                 const auto character = static_cast<unsigned char>(peek());
 
                 if (character < 0x20) {
-                    throw NError::TJsonParserErrorInvalidToken(pos_,"unescaped control character in string");
+                    throw NError::TJsonParserErrorInvalidToken(pos_, "unescaped control character in string");
                 }
 
                 str.push_back(peek());
@@ -227,22 +221,22 @@ namespace NJson {
     }
 
     TJsonValue TJsonParser::parse_array() {
-        assert(peek() == OPEN_ARRAY);
+        assert(peek() == NConstants::OPEN_ARRAY);
         TArray array;
         next();
 
-        while (!is_eof() && peek() != CLOSE_ARRAY) {
+        while (!is_eof() && peek() != NConstants::CLOSE_ARRAY) {
             array.push_back(parse_value());
             skip_space();
             if (!is_eof()) {
-                if (peek() == COMMA) {
+                if (peek() == NConstants::COMMA) {
                     next();
-                    if (!is_eof() && peek() == CLOSE_ARRAY) {
+                    if (!is_eof() && peek() == NConstants::CLOSE_ARRAY) {
                         throw NError::TJsonParserErrorInvalidToken(pos_, std::string("parsing array, bad comma"));
                     }
                 } else {
-                    if (peek() != CLOSE_ARRAY) {
-                        throw NError::TJsonParserErrorMissingData(pos_, std::format("parsing array, miss {}", COMMA));
+                    if (peek() != NConstants::CLOSE_ARRAY) {
+                        throw NError::TJsonParserErrorMissingData(pos_, std::format("parsing array, miss {}", NConstants::COMMA));
                     }
                 }
             }
@@ -257,16 +251,16 @@ namespace NJson {
     }
 
     TJsonValue TJsonParser::parse_object() {
-        assert(peek() == OPEN_OBJECT);
+        assert(peek() == NConstants::OPEN_OBJECT);
         TObject object;
         next();
 
-        while (!is_eof() && peek() != CLOSE_OBJECT) {
+        while (!is_eof() && peek() != NConstants::CLOSE_OBJECT) {
             auto json_key = parse_string();
             skip_space();
             if (!is_eof()) {
-                if (peek() != COLON) {
-                    throw NError::TJsonParserErrorMissingData(pos_, std::format("parsing object, miss {}", COLON));
+                if (peek() != NConstants::COLON) {
+                    throw NError::TJsonParserErrorMissingData(pos_, std::format("parsing object, miss {}", NConstants::COLON));
                 }
                 next();
                 if (!is_eof()) {
@@ -283,14 +277,14 @@ namespace NJson {
 
                     skip_space();
                     if (!is_eof()) {
-                        if (peek() == COMMA) {
+                        if (peek() == NConstants::COMMA) {
                             next();
-                            if (!is_eof() && peek() == CLOSE_OBJECT) {
+                            if (!is_eof() && peek() == NConstants::CLOSE_OBJECT) {
                                 throw NError::TJsonParserErrorInvalidToken(pos_, std::string("parsing object, bad comma"));
                             }
                         } else {
-                            if (peek() != CLOSE_OBJECT) {
-                                throw NError::TJsonParserErrorMissingData(pos_, std::format("parsing object, miss {}", COMMA));
+                            if (peek() != NConstants::CLOSE_OBJECT) {
+                                throw NError::TJsonParserErrorMissingData(pos_, std::format("parsing object, miss {}", NConstants::COMMA));
                             }
                         }
                     }

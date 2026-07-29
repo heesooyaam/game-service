@@ -109,4 +109,9 @@ namespace NJson::NError {
         explicit TJsonParserErrorDuplicateKey(size_t pos, std::string_view);
     };
 
+    class TJsonSerializerError : public TJsonError {
+    public:
+        explicit TJsonSerializerError(std::string_view);
+    };
+
 } // namespace NJson::NError

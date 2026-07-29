@@ -75,8 +75,6 @@ namespace {
         assert(result.ec == std::errc());
         
         std::string str(buf, result.ptr - buf);
-
-        
         if (str.find('.') == std::string::npos && str.find('e') == std::string::npos) {
             str += std::string(".0");
         }

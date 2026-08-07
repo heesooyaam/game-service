@@ -34,8 +34,8 @@ namespace NHttp {
         return value_;
     }
 
-    void THttpHeaders::add(std::string_view name, std::string_view value) {
-        headers_.emplace_back(std::string(name), std::string(value));
+    void THttpHeaders::add(std::string name, std::string value) {
+        headers_.emplace_back(std::move(name), std::move(value));
     }
 
     std::optional<std::string_view> THttpHeaders::get_value(std::string_view name) const noexcept {

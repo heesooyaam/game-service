@@ -22,7 +22,7 @@ namespace NHttp {
     public:
         THttpHeaders() = default;
 
-        void add(std::string_view name, std::string_view value);
+        void add(std::string name, std::string value);
         std::optional<std::string_view> get_value(std::string_view name) const noexcept;
         const std::vector<THttpHeader>& items() const noexcept;
     private:

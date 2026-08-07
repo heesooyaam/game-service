@@ -1,5 +1,6 @@
 #include <library/http/response/response.h>
 #include <library/http/request/request.h>
+#include <library/http/error.h>
 
 #include <cstdlib>
 #include <string>
@@ -44,10 +45,6 @@ namespace NHttp::NTests {
         check(header2.value() == "Bearer token123");
         check(name.empty()); 
         check(value.empty());
-
-        THttpHeader h3{"Accept", "text/html"};
-        THttpHeader h4{"Accept", "application/xml"};
-        check(check_headers_name_equality(h3, h4) == true);
     }
 
     void test_http_headers_class() {
@@ -81,10 +78,14 @@ namespace NHttp::NTests {
         request.set_target("/api/v1/trade/order");
         check(request.target() == "/api/v1/trade/order");
 
-        THttpVersion version{2, 0};
-        request.set_version(version);
-        check(request.version().major == 2);
-        check(request.version().minor == 0);
+        bool thrown = false;
+        try {
+            THttpVersion version{2, 0};
+            request.set_version(version);
+        } catch (const NError::THttpBadVersion&) {
+            thrown = true;
+        }
+        check(thrown);
 
         std::string bodyPayload = R"({"symbol": "BTCUSD", "qty": 1.5})";
         request.set_body(bodyPayload);
@@ -110,11 +111,16 @@ namespace NHttp::NTests {
         check(response.version().major == 1);
         check(response.version().minor == 1);
 
-        THttpVersion newVersion{3, 0};
-        response.set_version(newVersion);
-        check(response.version().major == 3);
-        check(response.version().minor == 0);
+        bool thrown = false;
+        try {
+            THttpVersion newVersion{3, 0};
+            response.set_version(newVersion);
+        } catch (const NError::THttpBadVersion&) {
+            thrown = true;
+        }
 
+        check(thrown);
+        
         response.set_body("<html><body>Success</body></html>");
         check(response.body() == "<html><body>Success</body></html>");
 

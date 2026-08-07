@@ -29,6 +29,4 @@ namespace NHttp {
         std::vector<THttpHeader> headers_;
     };
 
-    bool check_headers_name_equality(const THttpHeader&, const THttpHeader&);
-
 } //namespace NHttp

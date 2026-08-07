@@ -1,8 +1,12 @@
 #include <library/http/response/response.h>
+#include <library/http/error.h>
 
 namespace NHttp {
 
-    void THttpResponse::set_version(THttpVersion version) noexcept {
+    void THttpResponse::set_version(THttpVersion version) {
+        if (version != THttpVersion(1, 1)) {
+            throw NError::THttpBadVersion(version);
+        }
         version_ = version;
     }
 

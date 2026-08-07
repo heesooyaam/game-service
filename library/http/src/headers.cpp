@@ -52,8 +52,4 @@ namespace NHttp {
         return headers_;
     }
 
-    bool check_headers_name_equality(const THttpHeader& lhs, const THttpHeader& rhs) {
-        return is_equal_case_insensitive(lhs.name(), rhs.name());
-    }
-
 } //namespace NHttp

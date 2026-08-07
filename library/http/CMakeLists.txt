@@ -1,7 +1,9 @@
 add_library(http
+    src/error.cpp
     src/headers.cpp
     src/request.cpp
     src/response.cpp
+    src/version.cpp
 )
 
 target_include_directories(http

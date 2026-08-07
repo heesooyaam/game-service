@@ -11,7 +11,7 @@ namespace NHttp {
     class THttpResponse {
     public:
 
-        void set_version(THttpVersion) noexcept;
+        void set_version(THttpVersion);
         void set_status(EHttpResponseStatus) noexcept;
         void set_body(std::string);
 

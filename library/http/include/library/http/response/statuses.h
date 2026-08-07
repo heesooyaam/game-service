@@ -24,6 +24,7 @@ namespace NHttp {
         return std::array{
             NEnum::TEnumEntry{EHttpResponseStatus::SWITCHING_PROTOCOLS, "SWITCHING PROTOCOLS"},
             NEnum::TEnumEntry{EHttpResponseStatus::OK, "OK"},
+            NEnum::TEnumEntry{EHttpResponseStatus::CREATED, "CREATED"},
             NEnum::TEnumEntry{EHttpResponseStatus::NO_CONTENT, "NO CONTENT"},
             NEnum::TEnumEntry{EHttpResponseStatus::BAD_REQUEST, "BAD REQUEST"},
             NEnum::TEnumEntry{EHttpResponseStatus::UNAUTHORIZED, "UNAUTHORIZED"},

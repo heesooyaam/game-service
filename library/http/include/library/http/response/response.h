@@ -25,7 +25,7 @@ namespace NHttp {
 
     private:
         THttpVersion version_;
-        EHttpResponseStatus status_;
+        EHttpResponseStatus status_ = EHttpResponseStatus::NOT_SET;
         THttpHeaders headers_;
         std::string body_;
     };

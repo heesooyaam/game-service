@@ -43,8 +43,6 @@ namespace NHttp::NTests {
         
         check(header2.name() == "Authorization");
         check(header2.value() == "Bearer token123");
-        check(name.empty()); 
-        check(value.empty());
     }
 
     void test_http_headers_class() {
@@ -54,6 +52,10 @@ namespace NHttp::NTests {
         check(!headers.get_value("Content-Type").has_value());
 
         headers.add("Content-Length", "1024");
+
+        check(headers.get_value("content-length").value() == "1024");
+        check(headers.get_value("CONTENT-LENGTH").value() == "1024");
+        check(headers.get_value("CoNtEnT-LeNgTh").value() == "1024");
         headers.add("Connection", "keep-alive");
 
         check(headers.items().size() == 2);

@@ -8,6 +8,7 @@
 namespace NHttp {
 
     enum class EHttpResponseStatus : uint16_t {
+        NOT_SET = 0,
         SWITCHING_PROTOCOLS = 101,
         OK = 200,
         CREATED = 201,
@@ -22,6 +23,7 @@ namespace NHttp {
 
     constexpr auto get_enum_entries(std::type_identity<EHttpResponseStatus>) {
         return std::array{
+            NEnum::TEnumEntry{EHttpResponseStatus::NOT_SET, "NOT_SET"},
             NEnum::TEnumEntry{EHttpResponseStatus::SWITCHING_PROTOCOLS, "SWITCHING PROTOCOLS"},
             NEnum::TEnumEntry{EHttpResponseStatus::OK, "OK"},
             NEnum::TEnumEntry{EHttpResponseStatus::CREATED, "CREATED"},

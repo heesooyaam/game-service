@@ -12,7 +12,7 @@ namespace NHttp::NError {
         explicit THttpError(std::string_view, std::string_view);
     };
 
-    class THttpBadVersion : THttpError {
+    class THttpBadVersion : public THttpError {
     public:
         explicit THttpBadVersion(THttpVersion);
     };

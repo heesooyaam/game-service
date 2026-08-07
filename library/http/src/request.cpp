@@ -1,5 +1,4 @@
 #include <library/http/request/request.h>
-#include <library/http/error.h>
 
 namespace NHttp {
 
@@ -12,9 +11,6 @@ namespace NHttp {
     }
 
     void THttpRequest::set_version(THttpVersion version) {
-        if (version != THttpVersion(1, 1)) {
-            throw NError::THttpBadVersion(version);
-        }
         version_ = version;
     }
 

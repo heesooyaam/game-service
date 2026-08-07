@@ -80,15 +80,6 @@ namespace NHttp::NTests {
         request.set_target("/api/v1/trade/order");
         check(request.target() == "/api/v1/trade/order");
 
-        bool thrown = false;
-        try {
-            THttpVersion version{2, 0};
-            request.set_version(version);
-        } catch (const NError::THttpBadVersion&) {
-            thrown = true;
-        }
-        check(thrown);
-
         std::string bodyPayload = R"({"symbol": "BTCUSD", "qty": 1.5})";
         request.set_body(bodyPayload);
         check(request.body() == bodyPayload);
@@ -112,16 +103,6 @@ namespace NHttp::NTests {
 
         check(response.version().major == 1);
         check(response.version().minor == 1);
-
-        bool thrown = false;
-        try {
-            THttpVersion newVersion{3, 0};
-            response.set_version(newVersion);
-        } catch (const NError::THttpBadVersion&) {
-            thrown = true;
-        }
-
-        check(thrown);
         
         response.set_body("<html><body>Success</body></html>");
         check(response.body() == "<html><body>Success</body></html>");

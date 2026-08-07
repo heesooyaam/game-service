@@ -26,7 +26,7 @@ namespace NHttp {
         const std::string& body() const noexcept;
 
     private:
-        EHttpRequestMethod method_;
+        EHttpRequestMethod method_ = EHttpRequestMethod::NOT_SET;
         std::string target_;
         THttpVersion version_;
         THttpHeaders headers_;

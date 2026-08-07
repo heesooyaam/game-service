@@ -8,7 +8,8 @@
 namespace NHttp {
 
     enum class EHttpRequestMethod : uint8_t {
-        GET = 0,
+        NOT_SET = 0,
+        GET,
         POST,
         PUT,
         PATCH,
@@ -19,6 +20,7 @@ namespace NHttp {
 
     constexpr auto get_enum_entries(std::type_identity<EHttpRequestMethod>) {
         return std::array{
+            NEnum::TEnumEntry{EHttpRequestMethod::NOT_SET, "NOT SET"},
             NEnum::TEnumEntry{EHttpRequestMethod::GET, "GET"},
             NEnum::TEnumEntry{EHttpRequestMethod::POST, "POST"},
             NEnum::TEnumEntry{EHttpRequestMethod::PUT, "PUT"},

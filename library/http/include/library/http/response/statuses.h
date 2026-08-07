@@ -23,7 +23,7 @@ namespace NHttp {
 
     constexpr auto get_enum_entries(std::type_identity<EHttpResponseStatus>) {
         return std::array{
-            NEnum::TEnumEntry{EHttpResponseStatus::NOT_SET, "NOT_SET"},
+            NEnum::TEnumEntry{EHttpResponseStatus::NOT_SET, "NOT SET"},
             NEnum::TEnumEntry{EHttpResponseStatus::SWITCHING_PROTOCOLS, "SWITCHING PROTOCOLS"},
             NEnum::TEnumEntry{EHttpResponseStatus::OK, "OK"},
             NEnum::TEnumEntry{EHttpResponseStatus::CREATED, "CREATED"},

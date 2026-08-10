@@ -1,0 +1,99 @@
+#pragma once
+
+#include <array>
+#include <string_view>
+
+namespace NHttp::NData {
+
+    constexpr int parse_2digit(std::string_view s) noexcept {
+        return (s[0] - '0') * 10 + (s[1] - '0');
+    }
+
+    constexpr int parse_4digit(std::string_view s) noexcept {
+        return (s[0] - '0') * 1000 + (s[1] - '0') * 100 + (s[2] - '0') * 10 + (s[3] - '0');
+    }
+
+    constexpr bool is_leap_year(int year) noexcept {
+        return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+    }
+
+    constexpr int parse_month(std::string_view m) noexcept {
+        if (m == "Jan") return 1;
+        if (m == "Feb") return 2;
+        if (m == "Mar") return 3;
+        if (m == "Apr") return 4;
+        if (m == "May") return 5;
+        if (m == "Jun") return 6;
+        if (m == "Jul") return 7;
+        if (m == "Aug") return 8;
+        if (m == "Sep") return 9;
+        if (m == "Oct") return 10;
+        if (m == "Nov") return 11;
+        if (m == "Dec") return 12;
+        return 0;
+    }
+
+    constexpr bool is_valid_weekday(std::string_view wkday) noexcept {
+        return wkday == "Mon" || wkday == "Tue" || wkday == "Wed" ||
+            wkday == "Thu" || wkday == "Fri" || wkday == "Sat" || wkday == "Sun";
+    }
+
+    constexpr int days_in_month(int month, int year) noexcept {
+        constexpr std::array<int, 13> days = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+        if (month == 2 && is_leap_year(year)) {
+            return 29;
+        }
+        return days[month];
+    }
+
+    constexpr bool is_valid_http_date(std::string_view sv) noexcept {
+        if (sv.size() != 29) {
+            return false;
+        }
+
+        if (sv[3] != ',' || sv[4] != ' ' || sv[7] != ' ' || sv[11] != ' ' ||
+            sv[16] != ' ' || sv[19] != ':' || sv[22] != ':' || sv[25] != ' ') {
+            return false;
+        }
+
+        if (sv.substr(26, 3) != "GMT") {
+            return false;
+        }
+
+        if (!NHttp::NData::is_valid_weekday(sv.substr(0, 3))) {
+            return false;
+        }
+
+        auto is_digit = [](char c) noexcept { return c >= '0' && c <= '9'; };
+        if (!is_digit(sv[5]) || !is_digit(sv[6]) ||   
+            !is_digit(sv[12]) || !is_digit(sv[13]) ||   
+            !is_digit(sv[14]) || !is_digit(sv[15]) ||
+            !is_digit(sv[17]) || !is_digit(sv[18]) ||  
+            !is_digit(sv[20]) || !is_digit(sv[21]) ||   
+            !is_digit(sv[23]) || !is_digit(sv[24])) {  
+            return false;
+        }
+
+        const int day    = NHttp::NData::parse_2digit(sv.substr(5, 2));
+        const int month  = NHttp::NData::parse_month(sv.substr(8, 3));
+        const int year   = NHttp::NData::parse_4digit(sv.substr(12, 4));
+        const int hour   = NHttp::NData::parse_2digit(sv.substr(17, 2));
+        const int minute = NHttp::NData::parse_2digit(sv.substr(20, 2));
+        const int second = NHttp::NData::parse_2digit(sv.substr(23, 2));
+
+        if (month == 0 || year < 1900) {
+            return false;
+        }
+
+        if (day < 1 || day > NHttp::NData::days_in_month(month, year)) {
+            return false;
+        }
+
+        if (hour > 23 || minute > 59 || second > 60) {
+            return false;
+        }
+
+        return true;
+    }
+
+} // namespace NHttp::NData

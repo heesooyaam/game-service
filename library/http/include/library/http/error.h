@@ -17,4 +17,49 @@ namespace NHttp::NError {
         explicit THttpBadVersion(THttpVersion);
     };
 
+    class THttpNotSetMethod : public THttpError {
+    public:
+        explicit THttpNotSetMethod();
+    };
+
+    class THttpNotSetStatus : public THttpError {
+    public:
+        explicit THttpNotSetStatus();
+    };
+
+    class THttpBadTarget : public THttpError {
+    public:
+        explicit THttpBadTarget(std::string_view);
+    };
+
+    class THttpBadHeaderName : public THttpError {
+    public:
+        explicit THttpBadHeaderName(std::string_view);
+    };
+
+    class THttpBadHeaderValue : public THttpError {
+    public:
+        explicit THttpBadHeaderValue(std::string_view);
+    };
+
+    class THttpConflictHeadersRequest : public THttpError {
+    public:
+        explicit THttpConflictHeadersRequest();
+    };
+
+    class THttpConflictHeadersResponse : public THttpError {
+    public:
+        explicit THttpConflictHeadersResponse();
+    };
+
+    class THttpBadBody : public THttpError {
+    public:
+        explicit THttpBadBody(size_t size);
+    };
+
+    class THttpTooManyHeaders : public THttpError {
+    public:
+        explicit THttpTooManyHeaders(size_t count);
+    };
+
 }  //namespace NHttp::NError

@@ -12,16 +12,13 @@ namespace NHttp {
     }
 
     void THttpRequest::set_target(std::string target) {
-        if (!NModel::validate_target(target)) {
+        if (!NModel::validate_origin_form_target(target)) {
             throw NError::THttpBadTarget(target);
         }
         target_ = std::move(target);
     }
 
     void THttpRequest::set_version(THttpVersion version) {
-        if (!NModel::validate_version(version)) {
-            throw NError::THttpBadVersion(version);
-        }
         version_ = version;
     }
 
@@ -57,7 +54,7 @@ namespace NHttp {
     }
 
     bool THttpRequest::valid() const {
-        return NModel::validate_method(method_) && NModel::validate_target(target_) && NModel::validate_headers_request(headers_, body_, method_);
+        return NModel::validate_method(method_) && NModel::validate_origin_form_target(target_) && NModel::validate_headers_request(headers_, body_, method_);
     }
 
     std::ostream& operator<<(std::ostream& ostream, const THttpRequest& http_request) {

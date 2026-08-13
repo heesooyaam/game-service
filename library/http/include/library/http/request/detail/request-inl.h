@@ -18,11 +18,16 @@ namespace NHttp {
 
     template <typename TOstream>
     void THttpRequest::serialize(TOstream& ostream) const {
+
+        if (!NModel::validate_version(version_)) {
+            throw NError::THttpBadVersion(version_);
+        }
+
         if (!NModel::validate_method(method_)) {
             throw NError::THttpNotSetMethod();
         }
 
-        if (!NModel::validate_target(target_)) {
+        if (!NModel::validate_origin_form_target(target_)) {
             throw NError::THttpBadTarget(target_);
         }
 
@@ -34,19 +39,17 @@ namespace NHttp {
                 << target_ << " "
                 << "HTTP/" << version_.major << "." << version_.minor << "\r\n";
 
-        struct TCaseInsensitiveCompare {
-            bool operator()(std::string_view lhs, std::string_view rhs) const {
-                return std::lexicographical_compare(
-                    lhs.begin(), lhs.end(),
-                    rhs.begin(), rhs.end(),
-                    [](unsigned char a, unsigned char b) {
-                        return std::tolower(a) < std::tolower(b);
-                    }
-                );
-            }
+        auto comparator = [](std::string_view lhs, std::string_view rhs)  {
+            return std::lexicographical_compare(
+                lhs.begin(), lhs.end(),
+                rhs.begin(), rhs.end(),
+                [](unsigned char a, unsigned char b) {
+                    return std::tolower(a) < std::tolower(b);
+                }
+            );
         };
 
-        std::set<std::string_view, TCaseInsensitiveCompare> serialized_names;
+        std::set<std::string_view, decltype(comparator)> serialized_names(comparator);
         for (const THttpHeader& header : headers_.items()) {
             if (!serialized_names.insert(header.name()).second) {
                 continue;

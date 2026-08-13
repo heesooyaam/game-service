@@ -1,6 +1,11 @@
 #pragma once
 
 #include <array>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+#include <string>
 #include <string_view>
 
 namespace NHttp::NData {
@@ -18,18 +23,31 @@ namespace NHttp::NData {
     }
 
     constexpr int parse_month(std::string_view m) noexcept {
-        if (m == "Jan") return 1;
-        if (m == "Feb") return 2;
-        if (m == "Mar") return 3;
-        if (m == "Apr") return 4;
-        if (m == "May") return 5;
-        if (m == "Jun") return 6;
-        if (m == "Jul") return 7;
-        if (m == "Aug") return 8;
-        if (m == "Sep") return 9;
-        if (m == "Oct") return 10;
-        if (m == "Nov") return 11;
-        if (m == "Dec") return 12;
+        if (m == "Jan") {
+            return 1;
+        } else if (m == "Feb") {
+            return 2;
+        } else if (m == "Mar") {
+            return 3;
+        } else if (m == "Apr") {
+            return 4;
+        } else if (m == "May") {
+            return 5;
+        } else if (m == "Jun") {
+            return 6;
+        } else if (m == "Jul") {
+            return 7;
+        } else if (m == "Aug") {
+            return 8;
+        } else if (m == "Sep") {
+            return 9;
+        } else if (m == "Oct") {
+            return 10;
+        } else if (m == "Nov") {
+            return 11;
+        } else if (m == "Dec") {
+            return 12;
+        }
         return 0;
     }
 
@@ -94,6 +112,16 @@ namespace NHttp::NData {
         }
 
         return true;
+    }
+
+    inline std::string get_current_http_date() {
+        auto now = std::chrono::system_clock::now();
+        std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+        std::tm* now_tm = std::gmtime(&now_c);
+
+        std::stringstream ss;
+        ss << std::put_time(now_tm, "%a, %d %b %Y %H:%M:%S GMT");
+        return ss.str();
     }
 
 } // namespace NHttp::NData

@@ -5,9 +5,6 @@
 namespace NHttp {
 
     void THttpResponse::set_version(THttpVersion version) {
-        if (!NModel::validate_version(version)) {
-            throw NError::THttpBadVersion(version);
-        }
         version_ = version;
     }
 

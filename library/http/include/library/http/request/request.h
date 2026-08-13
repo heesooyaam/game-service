@@ -46,4 +46,4 @@ namespace NHttp {
 
 #define LIBRARY_HTTP_REQUEST_H
 #include <library/http/request/detail/request-inl.h>
-#undef LIBRARY_JSON_VALUE_
+#undef LIBRARY_HTTP_REQUEST_H

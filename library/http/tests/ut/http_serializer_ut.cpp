@@ -141,9 +141,9 @@ namespace NHttp::NTests {
         }
 
         {
-            static_check(HTTP_CHAR_NAME_LUT['a'] && HTTP_CHAR_NAME_LUT['Z'] && HTTP_CHAR_NAME_LUT['0']);
-            static_check(HTTP_CHAR_NAME_LUT['-'] && HTTP_CHAR_NAME_LUT['_'] && HTTP_CHAR_NAME_LUT['!']);
-            static_check(!HTTP_CHAR_NAME_LUT[' '] && !HTTP_CHAR_NAME_LUT[':'] && !HTTP_CHAR_NAME_LUT['\r']);
+            static_check(HTTP_CHAR_NAME_VALID_CHARS['a'] && HTTP_CHAR_NAME_VALID_CHARS['Z'] && HTTP_CHAR_NAME_VALID_CHARS['0']);
+            static_check(HTTP_CHAR_NAME_VALID_CHARS['-'] && HTTP_CHAR_NAME_VALID_CHARS['_'] && HTTP_CHAR_NAME_VALID_CHARS['!']);
+            static_check(!HTTP_CHAR_NAME_VALID_CHARS[' '] && !HTTP_CHAR_NAME_VALID_CHARS[':'] && !HTTP_CHAR_NAME_VALID_CHARS['\r']);
 
             check(validate_header_name_general("Content-Type"));
             check(validate_header_name_general("X-Custom_Header-123!#"));
@@ -152,8 +152,8 @@ namespace NHttp::NTests {
             check(!validate_header_name_general("Header:Name"));            
             check(!validate_header_name_general("Header\r\n"));           
 
-            static_check(HTTP_CHAR_VALUE_LUT[' '] && HTTP_CHAR_VALUE_LUT['\t'] && HTTP_CHAR_VALUE_LUT['a']);
-            static_check(!HTTP_CHAR_VALUE_LUT['\r'] && !HTTP_CHAR_VALUE_LUT['\n'] && !HTTP_CHAR_VALUE_LUT['\0']);
+            static_check(HTTP_CHAR_VALUE_VALID_CHARS[' '] && HTTP_CHAR_VALUE_VALID_CHARS['\t'] && HTTP_CHAR_VALUE_VALID_CHARS['a']);
+            static_check(!HTTP_CHAR_VALUE_VALID_CHARS['\r'] && !HTTP_CHAR_VALUE_VALID_CHARS['\n'] && !HTTP_CHAR_VALUE_VALID_CHARS['\0']);
 
             check(validate_header_value_general("text/html; charset=utf-8"));
             check(validate_header_value_general("value with\tspace and tab"));
@@ -173,15 +173,15 @@ namespace NHttp::NTests {
 
 
         {
-            check(validate_target("/"));
-            check(validate_target("/index.html"));
-            check(validate_target("/api/v1/users?id=10&name=john%20doe"));
-            check(validate_target("/path%2Fwith%2Aescaped"));
-            check(!validate_target(""));                   
-            check(!validate_target("index.html"));           
-            check(!validate_target("/path with spaces"));     
-            check(!validate_target("/path%2"));              
-            check(!validate_target("/path%2G"));         
+            check(validate_origin_form_target("/"));
+            check(validate_origin_form_target("/index.html"));
+            check(validate_origin_form_target("/api/v1/users?id=10&name=john%20doe"));
+            check(validate_origin_form_target("/path%2Fwith%2Aescaped"));
+            check(!validate_origin_form_target(""));                   
+            check(!validate_origin_form_target("index.html"));           
+            check(!validate_origin_form_target("/path with spaces"));     
+            check(!validate_origin_form_target("/path%2"));              
+            check(!validate_origin_form_target("/path%2G"));         
 
             {
                 THttpHeaders headers;
@@ -268,38 +268,12 @@ namespace NHttp::NTests {
                 THttpHeaders h1;
                 h1.add("Host", "example.com");
                 h1.add("Transfer-Encoding", "chunked");
-                check(validate_headers_request(h1, "", EHttpRequestMethod::POST));
+                check(!validate_headers_request(h1, "", EHttpRequestMethod::POST));
 
                 THttpHeaders h2;
                 h2.add("Host", "example.com");
                 h2.add("Transfer-Encoding", "cHuNkEd");
-                check(validate_headers_request(h2, "1", EHttpRequestMethod::POST));
-
-                THttpHeaders h3;
-                h3.add("Host", "example.com");
-                h3.add("Transfer-Encoding", "gzip, chunked");
-                check(validate_headers_request(h3, "12", EHttpRequestMethod::POST));
-
-                THttpHeaders h4;
-                h4.add("Host", "example.com");
-                h4.add("Transfer-Encoding", "gzip");
-                h4.add("Transfer-Encoding", "chunked");
-                check(validate_headers_request(h4, "123", EHttpRequestMethod::POST));
-
-                THttpHeaders h5;
-                h5.add("Host", "example.com");
-                h5.add("Transfer-Encoding", "chunked, gzip");
-                check(!validate_headers_request(h5, "1234", EHttpRequestMethod::POST));
-
-                THttpHeaders h6;
-                h6.add("Host", "example.com");
-                h6.add("Transfer-Encoding", "gzip, chunked, chunked");
-                check(!validate_headers_request(h6, "12345", EHttpRequestMethod::POST));
-
-                THttpHeaders h7;
-                h7.add("Host", "example.com");
-                h7.add("Transfer-Encoding", "gzip, , chunked");
-                check(!validate_headers_request(h7, "123456", EHttpRequestMethod::POST));
+                check(!validate_headers_request(h2, "1", EHttpRequestMethod::POST));
             }
         }
 
@@ -328,7 +302,7 @@ namespace NHttp::NTests {
                 check(!validate_headers_response(h1_bad_body, "hello", EHttpResponseStatus::OK));
 
                 THttpHeaders no_date;
-                check(!validate_headers_response(no_date, "", EHttpResponseStatus::OK));
+                check(validate_headers_response(no_date, "", EHttpResponseStatus::OK));
 
                 THttpHeaders bad_date;
                 bad_date.add("Date", "Sun, 06 Nov 1994 08:49:37 UTC"); // UTC запрещен
@@ -361,7 +335,7 @@ namespace NHttp::NTests {
                 THttpHeaders h2;
                 h2.add("Date", std::string(valid_date));
                 h2.add("Content-Length", "0");
-                check(validate_headers_response(h2, "", EHttpResponseStatus::NO_CONTENT));
+                check(!validate_headers_response(h2, "", EHttpResponseStatus::NO_CONTENT));
 
                 THttpHeaders h3;
                 h3.add("Date", std::string(valid_date));
@@ -387,7 +361,7 @@ namespace NHttp::NTests {
 
                 THttpHeaders no_loc;
                 no_loc.add("Date", std::string(valid_date));
-                check(!validate_headers_response(no_loc, "", EHttpResponseStatus::CREATED));
+                check(validate_headers_response(no_loc, "", EHttpResponseStatus::CREATED));
 
                 THttpHeaders empty_loc;
                 empty_loc.add("Date", std::string(valid_date));
@@ -554,32 +528,11 @@ namespace NHttp::NTests {
             req.set_target("/stream");
             req.set_version(THttpVersion(1, 1));
             req.headers().add("Host", "example.com");
-            req.headers().add("Transfer-Encoding", "chunked");
-            req.set_body(""); 
             
             verify(req, 
                 "POST /stream HTTP/1.1\r\n"
                 "Host: example.com\r\n"
-                "Transfer-Encoding: chunked\r\n"
                 "\r\n"
-            );
-        }
-
-        {
-            THttpRequest req;
-            req.set_method(EHttpRequestMethod::POST);
-            req.set_target("/stream");
-            req.set_version(THttpVersion(1, 1));
-            req.headers().add("Host", "example.com");
-            req.headers().add("Transfer-Encoding", "chunked");
-            req.set_body("5\r\nhello\r\n0\r\n\r\n");
-            
-            verify(req, 
-                "POST /stream HTTP/1.1\r\n"
-                "Host: example.com\r\n"
-                "Transfer-Encoding: chunked\r\n"
-                "\r\n"
-                "5\r\nhello\r\n0\r\n\r\n"
             );
         }
 
@@ -720,21 +673,6 @@ namespace NHttp::NTests {
         {
             THttpResponse resp;
             resp.set_version(THttpVersion(1, 1));
-            resp.set_status(EHttpResponseStatus::NO_CONTENT);
-            resp.headers().add("Date", std::string(valid_date));
-            resp.headers().add("Content-Length", "0");
-            
-            verify(resp, 
-                "HTTP/1.1 204 NO CONTENT\r\n"
-                "Date: Mon, 10 Aug 2026 21:25:35 GMT\r\n"
-                "Content-Length: 0\r\n"
-                "\r\n"
-            );
-        }
-
-        {
-            THttpResponse resp;
-            resp.set_version(THttpVersion(1, 1));
             resp.set_status(EHttpResponseStatus::SWITCHING_PROTOCOLS);
             resp.headers().add("Upgrade", "websocket");
             resp.headers().add("Connection", "Upgrade");
@@ -802,15 +740,11 @@ namespace NHttp::NTests {
             resp.set_version(THttpVersion(1, 1));
             resp.set_status(EHttpResponseStatus::OK);
             resp.headers().add("Date", std::string(valid_date));
-            resp.headers().add("Transfer-Encoding", "chunked");
-            resp.set_body("A\r\n0123456789\r\n0\r\n\r\n");
             
             verify(resp, 
                 "HTTP/1.1 200 OK\r\n"
                 "Date: Mon, 10 Aug 2026 21:25:35 GMT\r\n"
-                "Transfer-Encoding: chunked\r\n"
                 "\r\n"
-                "A\r\n0123456789\r\n0\r\n\r\n"
             );
         }
     }

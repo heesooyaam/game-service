@@ -43,4 +43,4 @@ namespace NHttp {
 
 #define LIBRARY_HTTP_RESPONSE_H
 #include <library/http/response/detail/response-inl.h>
-#undef LIBRARY_JSON_VALUE_
+#undef LIBRARY_HTTP_RESPONSE_H

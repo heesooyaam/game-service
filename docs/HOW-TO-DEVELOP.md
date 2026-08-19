@@ -17,9 +17,9 @@ g++ main.cpp -o app
 В большом проекте файлов много:
 
 ```text
-bin/heart_writer/main.cpp
-library/example/include/game/example/heart.h
-library/example/src/heart.cpp
+bin/game_service/main.cpp
+library/common/include/library/common/version.h
+library/common/src/version.cpp
 ```
 
 Тут уже надо понять, как эти файлы связаны между собой.
@@ -38,16 +38,16 @@ library/example/src/heart.cpp
 В нашем примере:
 
 ```text
-library/example/include/game/example/heart.h
-library/example/src/heart.cpp
-bin/heart_writer/main.cpp
+library/common/include/library/common/version.h
+library/common/src/version.cpp
+bin/game_service/main.cpp
 ```
 
-`heart.h` - публичный header библиотеки `example`.
+`version.h` - публичный header библиотеки `common`.
 
-`heart.cpp` - реализация библиотеки `example`.
+`version.cpp` - реализация библиотеки `common`.
 
-`main.cpp` - код бинаря `heart_writer`, который использует библиотеку `example`.
+`main.cpp` - код бинаря `game_service`, который использует библиотеку `common`.
 
 ### 1.2. Что такое header
 
@@ -60,7 +60,7 @@ Header обычно отвечает на вопрос:
 Например файл:
 
 ```text
-library/example/include/game/example/heart.h
+library/common/include/library/common/version.h
 ```
 
 содержит:
@@ -70,22 +70,19 @@ library/example/include/game/example/heart.h
 
 #include <string>
 
-namespace game::example {
+namespace game::common {
 
-std::string heart();
-std::string heart_message(const std::string& name);
+std::string version();
 
-} // namespace game::example
+} // namespace game::common
 ```
 
 Этот header говорит компилятору:
 
 ```text
-Есть namespace game::example.
-В нем есть функция heart().
+Есть namespace game::common.
+В нем есть функция version().
 Она не принимает аргументов и возвращает std::string.
-В нем есть функция heart_message(...).
-Она принимает const std::string& и возвращает std::string.
 ```
 
 Header не говорит, как именно эти функции работают. Он только описывает их форму.
@@ -108,16 +105,16 @@ Header не говорит, как именно эти функции работ
 Когда компилятор компилирует:
 
 ```text
-bin/heart_writer/main.cpp
+bin/game_service/main.cpp
 ```
 
 он не читает автоматически:
 
 ```text
-library/example/src/heart.cpp
+library/common/src/version.cpp
 ```
 
-Он не сканирует весь проект в поисках функции `heart_message()`.
+Он не сканирует весь проект в поисках функции `version()`.
 
 Он видит только:
 
@@ -129,32 +126,32 @@ library/example/src/heart.cpp
 Поэтому в `main.cpp` написано:
 
 ```cpp
-#include <game/example/heart.h>
+#include <library/common/version.h>
 ```
 
 Это значит:
 
 ```text
-Перед компиляцией main.cpp открой header game/example/heart.h и подставь его содержимое в этот файл.
+Перед компиляцией main.cpp открой header library/common/version.h и подставь его содержимое в этот файл.
 ```
 
 После этого компилятор видит объявление:
 
 ```cpp
-std::string heart_message(const std::string& name);
+std::string version();
 ```
 
 И может проверить строку:
 
 ```cpp
-game::example::heart_message("from heart_writer")
+game::common::version()
 ```
 
 Компилятор понимает:
 
 ```text
 такая функция объявлена
-она принимает строку
+она не принимает аргументов
 она возвращает std::string
 вызов выглядит корректно
 ```
@@ -172,47 +169,39 @@ game::example::heart_message("from heart_writer")
 Файл:
 
 ```text
-library/example/src/heart.cpp
+library/common/src/version.cpp
 ```
 
 содержит:
 
 ```cpp
-#include <game/example/heart.h>
+#include <library/common/version.h>
 
-namespace game::example {
+namespace game::common {
 
-std::string heart() {
-    return "<3";
+std::string version() {
+    return "0.1.0";
 }
 
-std::string heart_message(const std::string& name) {
-    if (name.empty()) {
-        return heart();
-    }
-
-    return heart() + " " + name;
-}
-
-} // namespace game::example
+} // namespace game::common
 ```
 
 Тут уже есть настоящий код функций.
 
-Почему `heart.cpp` тоже подключает `heart.h`?
+Почему `version.cpp` тоже подключает `version.h`?
 
 Чтобы компилятор проверил, что реализация совпадает с объявлением.
 
 Если в header написано:
 
 ```cpp
-std::string heart();
+std::string version();
 ```
 
 а в `.cpp` случайно написать:
 
 ```cpp
-int heart() {
+int version() {
     return 1;
 }
 ```
@@ -226,7 +215,7 @@ int heart() {
 Строка:
 
 ```cpp
-#include <game/example/heart.h>
+#include <library/common/version.h>
 ```
 
 для новичка может выглядеть как “импорт библиотеки”. Но технически это не совсем импорт.
@@ -236,10 +225,10 @@ int heart() {
 Упрощенно, было:
 
 ```cpp
-#include <game/example/heart.h>
+#include <library/common/version.h>
 
 int main() {
-    game::example::heart_message("from heart_writer");
+    game::common::version();
 }
 ```
 
@@ -248,24 +237,23 @@ int main() {
 ```cpp
 #include <string>
 
-namespace game::example {
+namespace game::common {
 
-std::string heart();
-std::string heart_message(const std::string& name);
+std::string version();
 
 }
 
 int main() {
-    game::example::heart_message("from heart_writer");
+    game::common::version();
 }
 ```
 
 Именно поэтому компилятору надо знать, где искать header-файлы.
 
-Если он не знает, где лежит `game/example/heart.h`, будет ошибка вида:
+Если он не знает, где лежит `library/common/version.h`, будет ошибка вида:
 
 ```text
-fatal error: game/example/heart.h: No such file or directory
+fatal error: library/common/version.h: No such file or directory
 ```
 
 ### 1.6. Что такое объектный файл
@@ -275,19 +263,19 @@ fatal error: game/example/heart.h: No such file or directory
 Когда компилятор компилирует:
 
 ```text
-library/example/src/heart.cpp
+library/common/src/version.cpp
 ```
 
 он получает примерно такой файл:
 
 ```text
-heart.cpp.o
+version.cpp.o
 ```
 
 Когда компилятор компилирует:
 
 ```text
-bin/heart_writer/main.cpp
+bin/game_service/main.cpp
 ```
 
 он получает примерно такой файл:
@@ -301,10 +289,10 @@ main.cpp.o
 Например `main.cpp.o` может содержать код `main()`, но внутри него остается ссылка:
 
 ```text
-где-то должна быть функция game::example::heart_message(...)
+где-то должна быть функция game::common::version(...)
 ```
 
-А `heart.cpp.o` содержит реализацию этой функции.
+А `version.cpp.o` содержит реализацию этой функции.
 
 Чтобы получить готовый бинарь, эти объектные файлы надо соединить.
 
@@ -317,19 +305,19 @@ main.cpp.o
 Упрощенно:
 
 ```text
-main.cpp.o говорит: я вызываю game::example::heart_message(...)
-heart.cpp.o говорит: я реализую game::example::heart_message(...)
+main.cpp.o говорит: я вызываю game::common::version(...)
+version.cpp.o говорит: я реализую game::common::version(...)
 линкер соединяет вызов с реализацией
 ```
 
 Если реализация не найдена, будет ошибка линковки.
 
-Например, если `main.cpp` вызвал `heart_message()`, но мы забыли слинковать бинарь с `game_example`, компиляция `main.cpp` может пройти, а линковка упадет.
+Например, если `main.cpp` вызвал `version()`, но мы забыли слинковать бинарь с `common`, компиляция `main.cpp` может пройти, а линковка упадет.
 
 Типичная идея ошибки будет такая:
 
 ```text
-undefined reference to game::example::heart_message(...)
+undefined reference to game::common::version(...)
 ```
 
 Это значит:
@@ -350,22 +338,22 @@ undefined reference to game::example::heart_message(...)
 
 Библиотека - это способ собрать несколько `.cpp` файлов в переиспользуемый кусок.
 
-В нашем примере `library/example` собирается в target:
+В нашем примере `library/common` собирается в target:
 
 ```text
-game_example
+common
 ```
 
 Сейчас внутри него один `.cpp`:
 
 ```text
-library/example/src/heart.cpp
+library/common/src/version.cpp
 ```
 
 Но позже библиотека может содержать много файлов:
 
 ```text
-src/heart.cpp
+src/version.cpp
 src/format.cpp
 src/writer.cpp
 ```
@@ -373,28 +361,28 @@ src/writer.cpp
 CMake соберет их в одну библиотеку, и другие бинарники смогут подключать её одной зависимостью:
 
 ```cmake
-target_link_libraries(heart_writer
+target_link_libraries(game_service
     PRIVATE
-        game_example
+        common
 )
 ```
 
-### 1.9. Пошагово: как собирается library/example
+### 1.9. Пошагово: как собирается library/common
 
 CMake-файл библиотеки:
 
 ```text
-library/example/CMakeLists.txt
+library/common/CMakeLists.txt
 ```
 
 содержит:
 
 ```cmake
-add_library(game_example
-    src/heart.cpp
+add_library(common
+    src/version.cpp
 )
 
-target_include_directories(game_example
+target_include_directories(common
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
@@ -402,42 +390,42 @@ target_include_directories(game_example
 add_subdirectory(tests/ut)
 ```
 
-Что происходит при сборке target-а `game_example`:
+Что происходит при сборке target-а `common`:
 
 ```bash
-cmake --build build --target game_example
+cmake --build build --target common
 ```
 
 Шаги примерно такие:
 
 ```text
-1. CMake видит target game_example.
-2. CMake знает, что game_example собирается из src/heart.cpp.
-3. Система сборки запускает компилятор для heart.cpp.
-4. Компилятор открывает heart.cpp.
-5. В heart.cpp есть #include <game/example/heart.h>.
-6. Компилятор ищет этот header в include-путях target-а game_example.
+1. CMake видит target common.
+2. CMake знает, что common собирается из src/version.cpp.
+3. Система сборки запускает компилятор для version.cpp.
+4. Компилятор открывает version.cpp.
+5. В version.cpp есть #include <library/common/version.h>.
+6. Компилятор ищет этот header в include-путях target-а common.
 7. include-путь был задан через target_include_directories(... PUBLIC .../include).
-8. Компилятор находит library/example/include/game/example/heart.h.
-9. Компилятор проверяет объявления из heart.h.
-10. Компилятор компилирует heart.cpp в объектный файл heart.cpp.o.
-11. Система сборки упаковывает объектный файл в библиотеку game_example.
+8. Компилятор находит library/common/include/library/common/version.h.
+9. Компилятор проверяет объявления из version.h.
+10. Компилятор компилирует version.cpp в объектный файл version.cpp.o.
+11. Система сборки упаковывает объектный файл в библиотеку common.
 ```
 
 Итог:
 
 ```text
-game_example собран
-внутри есть реализация heart() и heart_message()
-наружу доступен public header game/example/heart.h
+common собран
+внутри есть реализация version()
+наружу доступен public header library/common/version.h
 ```
 
-### 1.10. Пошагово: как собирается bin/heart_writer
+### 1.10. Пошагово: как собирается bin/game_service
 
 Бинарь лежит здесь:
 
 ```text
-bin/heart_writer/main.cpp
+bin/game_service/main.cpp
 ```
 
 Он содержит:
@@ -445,10 +433,10 @@ bin/heart_writer/main.cpp
 ```cpp
 #include <iostream>
 
-#include <game/example/heart.h>
+#include <library/common/version.h>
 
 int main() {
-    std::cout << game::example::heart_message("from heart_writer") << '\n';
+    std::cout << "game_service " << game::common::version() << '\n';
     return 0;
 }
 ```
@@ -456,63 +444,63 @@ int main() {
 CMake-файл бинаря:
 
 ```text
-bin/heart_writer/CMakeLists.txt
+bin/game_service/CMakeLists.txt
 ```
 
 содержит:
 
 ```cmake
-add_executable(heart_writer
+add_executable(game_service
     main.cpp
 )
 
-target_link_libraries(heart_writer
+target_link_libraries(game_service
     PRIVATE
-        game_example
+        common
 )
 ```
 
 Что происходит при сборке:
 
 ```bash
-cmake --build build --target heart_writer
+cmake --build build --target game_service
 ```
 
 Шаги примерно такие:
 
 ```text
-1. CMake видит target heart_writer.
-2. CMake знает, что heart_writer собирается из main.cpp.
-3. CMake видит, что heart_writer зависит от game_example.
-4. Если game_example еще не собран, сначала собирается game_example.
-5. Компилятор компилирует bin/heart_writer/main.cpp.
-6. В main.cpp есть #include <game/example/heart.h>.
-7. heart_writer сам не задавал include-путь к library/example/include.
-8. Но heart_writer связан с game_example через target_link_libraries(... game_example).
-9. У game_example include-директория объявлена как PUBLIC.
-10. Поэтому include-путь library/example/include автоматически доступен heart_writer.
-11. Компилятор находит heart.h и понимает, как вызывать heart_message().
+1. CMake видит target game_service.
+2. CMake знает, что game_service собирается из main.cpp.
+3. CMake видит, что game_service зависит от common.
+4. Если common еще не собран, сначала собирается common.
+5. Компилятор компилирует bin/game_service/main.cpp.
+6. В main.cpp есть #include <library/common/version.h>.
+7. game_service сам не задавал include-путь к library/common/include.
+8. Но game_service связан с common через target_link_libraries(... common).
+9. У common include-директория объявлена как PUBLIC.
+10. Поэтому include-путь library/common/include автоматически доступен game_service.
+11. Компилятор находит version.h и понимает, как вызывать version().
 12. Компилятор делает объектный файл main.cpp.o.
-13. Линкер соединяет main.cpp.o с библиотекой game_example.
-14. В библиотеке game_example находится реализация heart_message().
-15. На выходе получается исполняемый файл heart_writer.
+13. Линкер соединяет main.cpp.o с библиотекой common.
+14. В библиотеке common находится реализация version().
+15. На выходе получается исполняемый файл game_service.
 ```
 
 Итог:
 
 ```text
 main.cpp знает про функцию из header-а
-реализация функции лежит в game_example
-линкер соединяет heart_writer с game_example
-получается готовый бинарь heart_writer
+реализация функции лежит в common
+линкер соединяет game_service с common
+получается готовый бинарь game_service
 ```
 
 ### 1.11. Что будет, если что-то забыть
 
-Если забыть `#include <game/example/heart.h>`, компилятор не поймет вызов:
+Если забыть `#include <library/common/version.h>`, компилятор не поймет вызов:
 
 ```cpp
-game::example::heart_message("from heart_writer")
+game::common::version()
 ```
 
 Проблема будет на этапе компиляции.
@@ -520,9 +508,9 @@ game::example::heart_message("from heart_writer")
 Если оставить include, но убрать зависимость:
 
 ```cmake
-target_link_libraries(heart_writer
+target_link_libraries(game_service
     PRIVATE
-        game_example
+        common
 )
 ```
 
@@ -531,13 +519,13 @@ target_link_libraries(heart_writer
 Первая: компилятор может не найти header:
 
 ```text
-fatal error: game/example/heart.h: No such file or directory
+fatal error: library/common/version.h: No such file or directory
 ```
 
 Вторая: если header каким-то образом найден, линкер может не найти реализацию:
 
 ```text
-undefined reference to game::example::heart_message(...)
+undefined reference to game::common::version(...)
 ```
 
 Поэтому для использования библиотеки обычно нужны обе части:
@@ -550,25 +538,25 @@ target_link_libraries(...)  чтобы сборка получила include-п�
 ### 1.12. Короткая схема
 
 ```text
-heart.h
+version.h
   объявляет функции
   нужен компилятору при #include
 
-heart.cpp
+version.cpp
   реализует функции
   компилируется в объектный файл
 
-game_example
-  библиотека из heart.cpp
-  публикует include/game/example/heart.h
+common
+  библиотека из version.cpp
+  публикует include/library/common/version.h
 
-heart_writer/main.cpp
-  подключает heart.h
-  вызывает heart_message()
+game_service/main.cpp
+  подключает version.h
+  вызывает version()
 
-heart_writer
+game_service
   бинарь
-  линкуется с game_example
+  линкуется с common
 ```
 
 Руками вызывать компилятор и линкер на каждый файл неудобно. Поэтому мы используем CMake.
@@ -804,16 +792,16 @@ cmake --build my-debug-build
 В нашем проекте target может быть:
 
 ```text
-библиотека       game_example
+библиотека       common
 бинарь           game_service
-тестовый бинарь  game_example_ut
+тестовый бинарь  common_ut
 ```
 
-Библиотека - это переиспользуемый код. Например `game_example` или будущая `game_json`.
+Библиотека - это переиспользуемый код. Например `common` или будущая `json`.
 
 Бинарь - это исполняемый файл, который можно запустить. Например `game_service`.
 
-Тестовый бинарь - это обычный исполняемый файл, но он нужен только для проверки кода. Например `game_example_ut`.
+Тестовый бинарь - это обычный исполняемый файл, но он нужен только для проверки кода. Например `common_ut`.
 
 Собрать все targets проекта:
 
@@ -824,7 +812,7 @@ cmake --build build
 Собрать один конкретный target:
 
 ```bash
-cmake --build build --target game_example
+cmake --build build --target common
 ```
 
 Разберем:
@@ -836,29 +824,29 @@ cmake --build build
 Собрать проект из папки `build`.
 
 ```text
---target game_example
+--target common
 ```
 
-Но собрать не всё, а только target `game_example`.
+Но собрать не всё, а только target `common`.
 
 Важно: CMake обычно собирает не папки, а targets.
 
-Папка `library/example` - это место, где лежит код. А `game_example` - это target, который из этого кода собирается.
+Папка `library/common` - это место, где лежит код. А `common` - это target, который из этого кода собирается.
 
 ## 6. Что такое заголовки и почему CMake должен их искать
 
 Когда в `.cpp` файле написано:
 
 ```cpp
-#include <game/example/heart.h>
+#include <library/common/version.h>
 ```
 
-компилятор должен найти файл `heart.h`.
+компилятор должен найти файл `version.h`.
 
 Но сам по себе он не знает, где искать header нашего проекта. Поэтому в `CMakeLists.txt` мы пишем:
 
 ```cmake
-target_include_directories(game_example
+target_include_directories(common
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
@@ -867,7 +855,7 @@ target_include_directories(game_example
 Это значит:
 
 ```text
-Для target-а game_example добавь папку library/example/include в список мест, где компилятор ищет headers.
+Для target-а common добавь папку library/common/include в список мест, где компилятор ищет headers.
 ```
 
 `${CMAKE_CURRENT_SOURCE_DIR}` - это текущая папка, где лежит данный `CMakeLists.txt`.
@@ -875,7 +863,7 @@ target_include_directories(game_example
 Если мы находимся в:
 
 ```text
-library/example/CMakeLists.txt
+library/common/CMakeLists.txt
 ```
 
 то:
@@ -887,7 +875,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}
 примерно означает:
 
 ```text
-/home/.../game-service/library/example
+/home/.../game-service/library/common
 ```
 
 Поэтому:
@@ -899,19 +887,19 @@ ${CMAKE_CURRENT_SOURCE_DIR}/include
 означает:
 
 ```text
-/home/.../game-service/library/example/include
+/home/.../game-service/library/common/include
 ```
 
 После этого такой include:
 
 ```cpp
-#include <game/example/heart.h>
+#include <library/common/version.h>
 ```
 
 ведет к файлу:
 
 ```text
-library/example/include/game/example/heart.h
+library/common/include/library/common/version.h
 ```
 
 То есть часть пути до `include` добавляет CMake, а часть после `include` пишется в `#include`.
@@ -921,13 +909,13 @@ library/example/include/game/example/heart.h
 Можно было бы положить файл так:
 
 ```text
-library/example/include/heart.h
+library/common/include/version.h
 ```
 
 и писать:
 
 ```cpp
-#include <heart.h>
+#include <version.h>
 ```
 
 Но в большом проекте быстро появляются одинаковые имена:
@@ -944,17 +932,17 @@ status.h
 Поэтому внутри `include` мы кладем файлы с пространством имен проекта и библиотеки:
 
 ```text
-library/example/include/game/example/heart.h
-library/json/include/game/json/json_value.h
-library/http/include/game/http/http_parser.h
+library/common/include/library/common/version.h
+library/json/include/library/json/json_value.h
+library/http/include/library/http/headers.h
 ```
 
 И в коде пишем явно:
 
 ```cpp
-#include <game/example/heart.h>
-#include <game/json/json_value.h>
-#include <game/http/http_parser.h>
+#include <library/common/version.h>
+#include <library/json/json_value.h>
+#include <library/http/headers.h>
 ```
 
 Это длиннее, зато понятно и меньше конфликтов.
@@ -966,7 +954,7 @@ library/http/include/game/http/http_parser.h
 Для библиотеки почти всегда будет так:
 
 ```cmake
-target_include_directories(game_example
+target_include_directories(common
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
@@ -983,19 +971,19 @@ bin/game_service/main.cpp
 Если `main.cpp` подключает headers из библиотеки, например:
 
 ```cpp
-#include <game/common/version.h>
+#include <library/common/version.h>
 ```
 
-то сам `game_service` не обязан вручную знать, где лежит `game/common/version.h`. Ему достаточно слинковаться с библиотекой:
+то сам `game_service` не обязан вручную знать, где лежит `library/common/version.h`. Ему достаточно слинковаться с библиотекой:
 
 ```cmake
 target_link_libraries(game_service
     PRIVATE
-        game_common
+        common
 )
 ```
 
-А `game_common` уже сам объявил свои include-пути через `target_include_directories(game_common PUBLIC ...)`.
+А `common` уже сам объявил свои include-пути через `target_include_directories(common PUBLIC ...)`.
 
 ## 9. PRIVATE, PUBLIC, INTERFACE простыми словами
 
@@ -1012,22 +1000,22 @@ INTERFACE нужна только тем, кто от него зависит
 ```cmake
 target_link_libraries(game_service
     PRIVATE
-        game_common
+        common
 )
 ```
 
-`game_service` сам использует `game_common`, но никто другой не будет подключать `game_service` как библиотеку. Поэтому зависимость приватная.
+`game_service` сам использует `common`, но никто другой не будет подключать `game_service` как библиотеку. Поэтому зависимость приватная.
 
 Пример `PUBLIC`:
 
 ```cmake
-target_include_directories(game_example
+target_include_directories(common
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 ```
 
-Headers нужны самой библиотеке `game_example`, и они также нужны всем, кто будет использовать `game_example`.
+Headers нужны самой библиотеке `common`, и они также нужны всем, кто будет использовать `common`.
 
 Пример `INTERFACE`:
 
@@ -1068,21 +1056,21 @@ Header-only библиотека часто INTERFACE.
 
 ## 10. Структура библиотеки
 
-Основной пример - `library/example`:
+Основной пример - `library/common`:
 
 ```text
-library/example/
+library/common/
   CMakeLists.txt
   include/
-    game/
-      example/
-        heart.h
+    library/
+      common/
+        version.h
   src/
-    heart.cpp
+    version.cpp
   tests/
     ut/
       CMakeLists.txt
-      heart_ut.cpp
+      version_ut.cpp
 ```
 
 Что где лежит:
@@ -1098,8 +1086,8 @@ tests/ut/  unit-тесты этой библиотеки
 Можно класть рядом:
 
 ```text
-heart.h
-heart.cpp
+version.h
+version.cpp
 ```
 
 Это не ошибка.
@@ -1118,17 +1106,17 @@ src/      внутренности библиотеки
 Файл:
 
 ```text
-library/example/CMakeLists.txt
+library/common/CMakeLists.txt
 ```
 
 Содержимое:
 
 ```cmake
-add_library(game_example
-    src/heart.cpp
+add_library(common
+    src/version.cpp
 )
 
-target_include_directories(game_example
+target_include_directories(common
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
@@ -1139,17 +1127,17 @@ add_subdirectory(tests/ut)
 Разберем построчно.
 
 ```cmake
-add_library(game_example
-    src/heart.cpp
+add_library(common
+    src/version.cpp
 )
 ```
 
-Создает target-библиотеку с именем `game_example`.
+Создает target-библиотеку с именем `common`.
 
-`src/heart.cpp` - файл, который надо скомпилировать внутрь этой библиотеки.
+`src/version.cpp` - файл, который надо скомпилировать внутрь этой библиотеки.
 
 ```cmake
-target_include_directories(game_example
+target_include_directories(common
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
@@ -1182,7 +1170,7 @@ add_executable(game_service
 
 target_link_libraries(game_service
     PRIVATE
-        game_common
+        common
 )
 ```
 
@@ -1199,11 +1187,11 @@ add_executable(game_service
 ```cmake
 target_link_libraries(game_service
     PRIVATE
-        game_common
+        common
 )
 ```
 
-Говорит: чтобы собрать `game_service`, нужно подключить библиотеку `game_common`.
+Говорит: чтобы собрать `game_service`, нужно подключить библиотеку `common`.
 
 После сборки появится исполняемый файл `game_service`.
 
@@ -1212,45 +1200,69 @@ target_link_libraries(game_service
 Файл:
 
 ```text
-library/example/tests/ut/CMakeLists.txt
+library/common/tests/ut/CMakeLists.txt
 ```
 
 Содержимое:
 
 ```cmake
-add_executable(game_example_ut
-    heart_ut.cpp
+add_executable(common_ut
+    version_ut.cpp
 )
 
-target_link_libraries(game_example_ut
+target_link_libraries(common_ut
     PRIVATE
-        game_example
+        common
+        test_framework
 )
 
-add_test(NAME game_example_ut COMMAND game_example_ut)
+add_test(NAME common_ut COMMAND common_ut)
 ```
 
 Разберем.
 
 ```cmake
-add_executable(game_example_ut
-    heart_ut.cpp
+add_executable(common_ut
+    version_ut.cpp
 )
 ```
 
-Создает тестовый бинарь `game_example_ut`.
+Создает тестовый бинарь `common_ut`.
 
 ```cmake
-target_link_libraries(game_example_ut
+target_link_libraries(common_ut
     PRIVATE
-        game_example
+        common
+        test_framework
 )
 ```
 
-Говорит: тест проверяет библиотеку `game_example`, поэтому его надо слинковать с `game_example`.
+Говорит: тест проверяет библиотеку `common` и использует легкий встроенный
+`test_framework`, поэтому нужно подключить обе библиотеки.
+
+Сам `test_framework` устроен как обычная библиотека: публичные макросы и типы
+лежат в `include/library/test_framework/test.h`, а registry, runner и
+форматирование ошибок реализованы в `src/test.cpp`.
+
+Сам тест выглядит так:
+
+```cpp
+#define NTEST_MAIN
+#include <library/test_framework/test.h>
+
+#include <library/common/version.h>
+
+TEST_CASE(version) {
+    CHECK_EQ(game::common::version(), "0.1.0");
+}
+```
+
+`NTEST_MAIN` добавляет готовую точку входа, `TEST_CASE` регистрирует отдельный
+тест, а `CHECK`, `CHECK_EQ`, `CHECK_NE` и `CHECK_THROWS_AS` выполняют проверки.
+При ошибке runner печатает имя теста, файл, строку и упавшее выражение.
 
 ```cmake
-add_test(NAME game_example_ut COMMAND game_example_ut)
+add_test(NAME common_ut COMMAND common_ut)
 ```
 
 Регистрирует тест в CTest. После этого его можно запускать через:
@@ -1258,6 +1270,50 @@ add_test(NAME game_example_ut COMMAND game_example_ut)
 ```bash
 ctest --test-dir build
 ```
+
+### 14.1. Как устроен test_framework
+
+Framework состоит из публичного header и реализации:
+
+```text
+library/test_framework/
+  include/library/test_framework/test.h
+  src/test.cpp
+```
+
+Жизненный цикл одного тестового executable выглядит так:
+
+```text
+TEST_CASE
+  -> создает тестовую функцию и registration object
+  -> registration object до main кладет имя и указатель на функцию в registry
+  -> NTEST_MAIN вызывает run_all_tests()
+  -> runner последовательно вызывает функции из registry
+  -> CHECK при ошибке передает файл и строку через std::source_location
+  -> runner печатает результат и возвращает exit code для CTest
+```
+
+`TEST_CASE(name)` создает обычную `static` функцию. Чтобы имена внутренних
+функций не конфликтовали, framework добавляет к ним номер строки из `__LINE__`.
+Рядом создается `TTestRegistration`, конструктор которого сохраняет пару
+`{имя, указатель на функцию}` в общем vector.
+
+Registry находится внутри функции `test_cases()` как function-local static.
+Он создается при первом обращении и используется всеми test cases executable.
+
+`CHECK(expression)` передает результат и текст выражения в `NTesting::check`.
+Если результат ложный, `fail` формирует сообщение и бросает исключение. Runner
+ловит его на границе test case, помечает тест как упавший и продолжает остальные.
+
+`CHECK_THROWS_AS` реализован шаблоном в header, потому что компилятор должен видеть
+реализацию шаблона в месте использования. Registry, runner и обычные функции
+проверки реализованы в `src/test.cpp`.
+
+В одном тестовом executable `NTEST_MAIN` нужно определять ровно в одном `.cpp`.
+Он добавляет готовый `main`, который вызывает runner.
+
+Полный разбор с раскрытием макросов, примером вывода и ограничениями лежит рядом
+с библиотекой: [`library/test_framework/README.md`](../library/test_framework/README.md).
 
 ## 15. Зачем нужен корневой CMakeLists.txt
 
@@ -1310,13 +1366,13 @@ enable_testing()
 Потом корневой файл подключает крупные части проекта:
 
 ```cmake
+add_subdirectory(library/test_framework)
 add_subdirectory(library/common)
-add_subdirectory(library/example)
 add_subdirectory(library/game_core)
+add_subdirectory(library/http)
 add_subdirectory(library/json)
 
 add_subdirectory(bin/gateway_service)
-add_subdirectory(bin/heart_writer)
 add_subdirectory(bin/game_service)
 add_subdirectory(bin/storage_service)
 ```
@@ -1326,13 +1382,13 @@ add_subdirectory(bin/storage_service)
 Например:
 
 ```cmake
-add_subdirectory(library/example)
+add_subdirectory(library/common)
 ```
 
 говорит CMake:
 
 ```text
-Открой library/example/CMakeLists.txt и выполни инструкции оттуда.
+Открой library/common/CMakeLists.txt и выполни инструкции оттуда.
 ```
 
 ## 16. Почему нет library/CMakeLists.txt
@@ -1343,7 +1399,7 @@ add_subdirectory(library/example)
 CMakeLists.txt
 library/CMakeLists.txt
 library/common/CMakeLists.txt
-library/example/CMakeLists.txt
+library/http/CMakeLists.txt
 library/json/CMakeLists.txt
 ```
 
@@ -1352,7 +1408,6 @@ library/json/CMakeLists.txt
 ```cmake
 add_subdirectory(library)
 add_subdirectory(bin/gateway_service)
-add_subdirectory(bin/heart_writer)
 add_subdirectory(bin/game_service)
 add_subdirectory(bin/storage_service)
 ```
@@ -1360,15 +1415,16 @@ add_subdirectory(bin/storage_service)
 А `library/CMakeLists.txt` содержал бы:
 
 ```cmake
+add_subdirectory(test_framework)
 add_subdirectory(common)
-add_subdirectory(example)
 add_subdirectory(game_core)
+add_subdirectory(http)
 add_subdirectory(json)
 ```
 
 Это тоже нормальная схема.
 
-Почему сейчас подключаем `library/common`, `library/example`, `library/json` прямо из корня?
+Почему сейчас подключаем библиотеки прямо из корня?
 
 Потому что проект пока маленький. Так меньше уровней и проще видеть весь стартовый набор target-ов в одном месте.
 
@@ -1387,14 +1443,14 @@ library/CMakeLists.txt
 ```text
 bin/
   gateway_service/
-  heart_writer/
   game_service/
   storage_service/
 
 library/
+  test_framework/
   common/
-  example/
   game_core/
+  http/
   json/
 
 docs/
@@ -1407,13 +1463,11 @@ docs/
 ```text
 bin/
   gateway_service/
-  heart_writer/
   game_service/
   storage_service/
 
 library/
   common/
-  example/
   json/
   game_core/
   async/
@@ -1462,16 +1516,16 @@ ctest
 
 Говорит CTest искать список тестов в build-директории.
 
-Запустить только тесты примера:
+Запустить только тесты `common`:
 
 ```bash
-ctest --test-dir build -R example
+ctest --test-dir build -R common
 ```
 
-`-R example` означает:
+`-R common` означает:
 
 ```text
-запусти только тесты, имя которых подходит под example
+запусти только тесты, имя которых подходит под common
 ```
 
 Запустить только тесты `json`, когда они появятся:
@@ -1480,47 +1534,47 @@ ctest --test-dir build -R example
 ctest --test-dir build -R json
 ```
 
-## 20. Полный учебный пример: library/example
+## 20. Полный учебный образец: library/common
 
-В проекте есть маленькая полностью реализованная библиотека `library/example`. Она не относится к продуктовой логике, а нужна как образец раскладки файлов, CMake и тестов.
+`library/common` — небольшая реальная библиотека проекта, на которой удобно увидеть
+раскладку файлов, CMake и тестов.
 
 Файл:
 
 ```text
-library/example/include/game/example/heart.h
+library/common/include/library/common/version.h
 ```
 
-объявляет функции:
+объявляет функцию:
 
 ```cpp
-std::string heart();
-std::string heart_message(const std::string& name);
+std::string version();
 ```
 
 Файл:
 
 ```text
-library/example/src/heart.cpp
+library/common/src/version.cpp
 ```
 
-реализует эти функции.
+реализует эту функцию.
 
 Файл:
 
 ```text
-library/example/tests/ut/heart_ut.cpp
+library/common/tests/ut/version_ut.cpp
 ```
 
-проверяет эти функции.
+проверяет эту функцию.
 
-Собрать и запустить только тест примера:
+Собрать и запустить только тест `common`:
 
 ```bash
-cmake --build build --target game_example_ut
-ctest --test-dir build -R example
+cmake --build build --target common_ut
+ctest --test-dir build -R common
 ```
 
-Когда ученик будет делать `library/json`, он должен повторять эту же схему: публичные `.h` в `include/game/json`, реализация в `src`, unit-тесты в `tests/ut`, отдельные targets в CMake.
+Когда ученик будет делать `library/json`, он должен повторять эту же схему: публичные `.h` в `include/library/json`, реализация в `src`, unit-тесты в `tests/ut`, отдельные targets в CMake.
 
 ## 21. Как добавлять новую библиотеку
 
@@ -1531,7 +1585,7 @@ ctest --test-dir build -R example
 ```text
 library/net/
   CMakeLists.txt
-  include/game/net/socket.h
+  include/library/net/socket.h
   src/socket.cpp
   tests/ut/CMakeLists.txt
   tests/ut/socket_ut.cpp
@@ -1540,11 +1594,11 @@ library/net/
 Пишем `library/net/CMakeLists.txt`:
 
 ```cmake
-add_library(game_net
+add_library(net
     src/socket.cpp
 )
 
-target_include_directories(game_net
+target_include_directories(net
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
@@ -1555,16 +1609,17 @@ add_subdirectory(tests/ut)
 Пишем `library/net/tests/ut/CMakeLists.txt`:
 
 ```cmake
-add_executable(game_net_ut
+add_executable(net_ut
     socket_ut.cpp
 )
 
-target_link_libraries(game_net_ut
+target_link_libraries(net_ut
     PRIVATE
-        game_net
+        net
+        test_framework
 )
 
-add_test(NAME game_net_ut COMMAND game_net_ut)
+add_test(NAME net_ut COMMAND net_ut)
 ```
 
 Добавляем в корневой `CMakeLists.txt`:
@@ -1576,12 +1631,12 @@ add_subdirectory(library/net)
 После этого можно собрать библиотеку:
 
 ```bash
-cmake --build build --target game_net
+cmake --build build --target net
 ```
 
 и её тесты:
 
 ```bash
-cmake --build build --target game_net_ut
+cmake --build build --target net_ut
 ctest --test-dir build -R net
 ```

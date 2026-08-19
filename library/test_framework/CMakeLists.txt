@@ -1,6 +1,8 @@
-add_library(test_framework INTERFACE)
+add_library(test_framework
+    src/test.cpp
+)
 
 target_include_directories(test_framework
-    INTERFACE
+    PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )

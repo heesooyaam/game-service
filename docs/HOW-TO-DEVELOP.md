@@ -1271,6 +1271,50 @@ add_test(NAME common_ut COMMAND common_ut)
 ctest --test-dir build
 ```
 
+### 14.1. Как устроен test_framework
+
+Framework состоит из публичного header и реализации:
+
+```text
+library/test_framework/
+  include/library/test_framework/test.h
+  src/test.cpp
+```
+
+Жизненный цикл одного тестового executable выглядит так:
+
+```text
+TEST_CASE
+  -> создает тестовую функцию и registration object
+  -> registration object до main кладет имя и указатель на функцию в registry
+  -> NTEST_MAIN вызывает run_all_tests()
+  -> runner последовательно вызывает функции из registry
+  -> CHECK при ошибке передает файл и строку через std::source_location
+  -> runner печатает результат и возвращает exit code для CTest
+```
+
+`TEST_CASE(name)` создает обычную `static` функцию. Чтобы имена внутренних
+функций не конфликтовали, framework добавляет к ним номер строки из `__LINE__`.
+Рядом создается `TTestRegistration`, конструктор которого сохраняет пару
+`{имя, указатель на функцию}` в общем vector.
+
+Registry находится внутри функции `test_cases()` как function-local static.
+Он создается при первом обращении и используется всеми test cases executable.
+
+`CHECK(expression)` передает результат и текст выражения в `NTesting::check`.
+Если результат ложный, `fail` формирует сообщение и бросает исключение. Runner
+ловит его на границе test case, помечает тест как упавший и продолжает остальные.
+
+`CHECK_THROWS_AS` реализован шаблоном в header, потому что компилятор должен видеть
+реализацию шаблона в месте использования. Registry, runner и обычные функции
+проверки реализованы в `src/test.cpp`.
+
+В одном тестовом executable `NTEST_MAIN` нужно определять ровно в одном `.cpp`.
+Он добавляет готовый `main`, который вызывает runner.
+
+Полный разбор с раскрытием макросов, примером вывода и ограничениями лежит рядом
+с библиотекой: [`library/test_framework/README.md`](../library/test_framework/README.md).
+
 ## 15. Зачем нужен корневой CMakeLists.txt
 
 Корневой файл лежит здесь:

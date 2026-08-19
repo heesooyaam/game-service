@@ -9,6 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 enable_testing()
 
+add_subdirectory(library/test_framework)
 add_subdirectory(library/common)
 add_subdirectory(library/example)
 add_subdirectory(library/example2)

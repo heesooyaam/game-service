@@ -1,12 +1,13 @@
+#define NTEST_MAIN
+#include <library/test_framework/test.h>
+
 #include <game/example/heart.h>
 
-#include <cassert>
-#include <string>
+TEST_CASE(heart) {
+    CHECK_EQ(game::example::heart(), "<3");
+}
 
-int main() {
-    assert(game::example::heart() == "<3");
-    assert(game::example::heart_message("") == "<3");
-    assert(game::example::heart_message("json") == "<3 json");
-
-    return 0;
+TEST_CASE(heart_message) {
+    CHECK_EQ(game::example::heart_message(""), "<3");
+    CHECK_EQ(game::example::heart_message("json"), "<3 json");
 }

@@ -1,3 +1,6 @@
+#define NTEST_MAIN
+#include <library/test_framework/test.h>
+
 #include <library/json/json_parser.h>
 #include <library/json/json_serializer.h>
 #include <library/json/json_value.h>
@@ -5,18 +8,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
-constexpr void static_check(bool value) {
-    if (!value) {
-        std::exit(EXIT_FAILURE);
-    }
-}
-
-void check(bool value) {
-    if (!value) {
-        std::exit(EXIT_FAILURE);
-    }
-}
 
 namespace {
 
@@ -39,28 +30,28 @@ namespace NJson::NTests {
             std::string serialized_text2 = serialize_to_string(original_val2);
             TJsonValue parsed_val1 = parse(serialized_text1);
             TJsonValue parsed_val2 = parse(serialized_text2);
-            check(parsed_val1 == original_val1);
-            check(parsed_val2 == original_val2);
-            check(parsed_val1 == parsed_val2);
-            check(original_val1 == original_val2);
-            check(serialized_text1 == serialized_text2);
+            CHECK(parsed_val1 == original_val1);
+            CHECK(parsed_val2 == original_val2);
+            CHECK(parsed_val1 == parsed_val2);
+            CHECK(original_val1 == original_val2);
+            CHECK(serialized_text1 == serialized_text2);
         }
     }
 
-    void test_null() {
+    TEST_CASE(test_null) {
         run_round_trip_tests({
             R"(null)"
         });
     }
 
-    void test_booleans() {
+    TEST_CASE(test_booleans) {
         run_round_trip_tests({
             R"(true)",
             R"(false)"
         });
     }
 
-    void test_integers() {
+    TEST_CASE(test_integers) {
         run_round_trip_tests({
             R"(0)",
             R"(1)",
@@ -74,7 +65,7 @@ namespace NJson::NTests {
         });
     }
 
-    void test_double1() {
+    TEST_CASE(test_double1) {
         run_round_trip_tests({
             R"(0.0)",
             R"(-0.0)",
@@ -87,7 +78,7 @@ namespace NJson::NTests {
         });
     }
 
-    void test_strings() {
+    TEST_CASE(test_strings) {
         run_round_trip_tests({
             R"("")",
             R"("a")",
@@ -102,7 +93,7 @@ namespace NJson::NTests {
         });
     }
 
-    void test_arrays() {
+    TEST_CASE(test_arrays) {
         run_round_trip_tests({
             R"([])",
             R"([1, 2, 3])",
@@ -113,7 +104,7 @@ namespace NJson::NTests {
         });
     }
 
-    void test_objects() {
+    TEST_CASE(test_objects) {
         run_round_trip_tests({
             R"({})",
             R"({"a": 1})",
@@ -124,7 +115,7 @@ namespace NJson::NTests {
         });
     }
 
-    void test_nested_structures() {
+    TEST_CASE(test_nested_structures) {
         run_round_trip_tests({
             R"({"users": [{"id": 1, "name": "A"}, {"id": 2, "name": "B"}], "active": false, "meta": {"page": 1, "total": 100}})",
             R"([{"a": [1, 2, 3]}, {"b": {"c": {}}}])",
@@ -133,33 +124,33 @@ namespace NJson::NTests {
         });
     }
 
-    void test_double2() {
+    TEST_CASE(test_double2) {
         run_round_trip_tests({
             R"(0.0)",
             R"(-0.0)",
             R"(3.141592653589793)",
             R"(-0.0000001)",
-            
+
             R"(0e0)",
             R"(-0e0)",
             R"(0.0e-10)",
             R"(-0.0e+10)",
 
-            R"(1e0)",          
-            R"(-1E0)",        
-            R"(1.5e1)",       
-            R"(1.5E+1)",        
-            R"(1.5e-1)",      
-            R"(12345e-3)",      
+            R"(1e0)",
+            R"(-1E0)",
+            R"(1.5e1)",
+            R"(1.5E+1)",
+            R"(1.5e-1)",
+            R"(12345e-3)",
 
             R"(1.23456789012345)",
             R"(-9.876543210987654)",
-            R"(1000000000000000.5)", 
+            R"(1000000000000000.5)",
             R"(0.0000000000000001)",
 
             R"(1.7976931348623157e+308)",
             R"(-1.7976931348623157e+308)",
-            
+
             R"(2.2250738585072014e-308)",
             R"(-2.2250738585072014e-308)",
 
@@ -169,29 +160,13 @@ namespace NJson::NTests {
             R"(1.000000000000001)",
             R"(0.9999999999999999)",
 
-            R"(9007199254740991.0)", 
-            R"(-9007199254740991.0)", 
-            R"(9007199254740992.0)", 
-            
+            R"(9007199254740991.0)",
+            R"(-9007199254740991.0)",
+            R"(9007199254740992.0)",
+
             R"(1e+0005)",
             R"(2.5E-003)"
         });
     }
 
 } //namespace NJson::NTests
-
-int main() {
-    using namespace NJson::NTests;
-
-    test_null();
-    test_booleans();
-    test_integers();
-    test_double1();
-    test_double2();
-    test_strings();
-    test_arrays();
-    test_objects();
-    test_nested_structures();
-    
-    return 0;
-}

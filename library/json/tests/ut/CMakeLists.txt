@@ -17,21 +17,25 @@ add_executable(json_round_trip_ut
 target_link_libraries(json_value_ut
     PRIVATE
         json
+        test_framework
 )
 
 target_link_libraries(json_parser_ut
     PRIVATE
         json
+        test_framework
 )
 
 target_link_libraries(json_serializer_ut
     PRIVATE
         json
+        test_framework
 )
 
 target_link_libraries(json_round_trip_ut
     PRIVATE
         json
+        test_framework
 )
 
 add_test(NAME json_value_ut COMMAND json_value_ut)

@@ -1225,6 +1225,7 @@ add_executable(game_example_ut
 target_link_libraries(game_example_ut
     PRIVATE
         game_example
+        test_framework
 )
 
 add_test(NAME game_example_ut COMMAND game_example_ut)
@@ -1244,10 +1245,33 @@ add_executable(game_example_ut
 target_link_libraries(game_example_ut
     PRIVATE
         game_example
+        test_framework
 )
 ```
 
-Говорит: тест проверяет библиотеку `game_example`, поэтому его надо слинковать с `game_example`.
+Говорит: тест проверяет библиотеку `game_example` и использует легкий встроенный
+`test_framework`, поэтому нужно подключить обе библиотеки.
+
+Сам тест выглядит так:
+
+```cpp
+#define NTEST_MAIN
+#include <library/test_framework/test.h>
+
+#include <game/example/heart.h>
+
+TEST_CASE(heart) {
+    CHECK_EQ(game::example::heart(), "<3");
+}
+
+TEST_CASE(heart_message) {
+    CHECK_EQ(game::example::heart_message("json"), "<3 json");
+}
+```
+
+`NTEST_MAIN` добавляет готовую точку входа, `TEST_CASE` регистрирует отдельный
+тест, а `CHECK`, `CHECK_EQ`, `CHECK_NE` и `CHECK_THROWS_AS` выполняют проверки.
+При ошибке runner печатает имя теста, файл, строку и упавшее выражение.
 
 ```cmake
 add_test(NAME game_example_ut COMMAND game_example_ut)
@@ -1310,6 +1334,7 @@ enable_testing()
 Потом корневой файл подключает крупные части проекта:
 
 ```cmake
+add_subdirectory(library/test_framework)
 add_subdirectory(library/common)
 add_subdirectory(library/example)
 add_subdirectory(library/game_core)
@@ -1392,6 +1417,7 @@ bin/
   storage_service/
 
 library/
+  test_framework/
   common/
   example/
   game_core/

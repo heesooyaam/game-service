@@ -28,8 +28,9 @@ namespace NHttp::NTests {
         static_check(static_cast<uint16_t>(EHttpResponseStatus::BAD_REQUEST) == 400);
         static_check(static_cast<uint16_t>(EHttpResponseStatus::INTERNAL_SERVER_ERROR) == 500);
 
-        static_check(static_cast<uint8_t>(EHttpRequestMethod::GET) == 0);
-        static_check(static_cast<uint8_t>(EHttpRequestMethod::POST) == 1);
+        static_check(static_cast<uint8_t>(EHttpRequestMethod::NOT_SET) == 0);
+        static_check(static_cast<uint8_t>(EHttpRequestMethod::GET) == 1);
+        static_check(static_cast<uint8_t>(EHttpRequestMethod::POST) == 2);
     }
 
     void test_http_header_struct() {

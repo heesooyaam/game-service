@@ -123,9 +123,9 @@ namespace NHttp::NTests {
     TEST_CASE(test_model_validation_headers_general) {
         using namespace NHttp::NModel;
 
-        STATIC_CHECK(HTTP_CHAR_NAME_VALID_CHARS['a'] && HTTP_CHAR_NAME_VALID_CHARS['Z'] && HTTP_CHAR_NAME_VALID_CHARS['0']);
-        STATIC_CHECK(HTTP_CHAR_NAME_VALID_CHARS['-'] && HTTP_CHAR_NAME_VALID_CHARS['_'] && HTTP_CHAR_NAME_VALID_CHARS['!']);
-        STATIC_CHECK(!HTTP_CHAR_NAME_VALID_CHARS[' '] && !HTTP_CHAR_NAME_VALID_CHARS[':'] && !HTTP_CHAR_NAME_VALID_CHARS['\r']);
+        STATIC_CHECK(HTTP_NAME_VALID_CHARS['a'] && HTTP_NAME_VALID_CHARS['Z'] && HTTP_NAME_VALID_CHARS['0']);
+        STATIC_CHECK(HTTP_NAME_VALID_CHARS['-'] && HTTP_NAME_VALID_CHARS['_'] && HTTP_NAME_VALID_CHARS['!']);
+        STATIC_CHECK(!HTTP_NAME_VALID_CHARS[' '] && !HTTP_NAME_VALID_CHARS[':'] && !HTTP_NAME_VALID_CHARS['\r']);
 
         CHECK(validate_header_name_general("Content-Type"));
         CHECK(validate_header_name_general("X-Custom_Header-123!#"));
@@ -134,8 +134,8 @@ namespace NHttp::NTests {
         CHECK(!validate_header_name_general("Header:Name"));            
         CHECK(!validate_header_name_general("Header\r\n"));           
 
-        STATIC_CHECK(HTTP_CHAR_VALUE_VALID_CHARS[' '] && HTTP_CHAR_VALUE_VALID_CHARS['\t'] && HTTP_CHAR_VALUE_VALID_CHARS['a']);
-        STATIC_CHECK(!HTTP_CHAR_VALUE_VALID_CHARS['\r'] && !HTTP_CHAR_VALUE_VALID_CHARS['\n'] && !HTTP_CHAR_VALUE_VALID_CHARS['\0']);
+        STATIC_CHECK(HTTP_VALUE_VALID_CHARS[' '] && HTTP_VALUE_VALID_CHARS['\t'] && HTTP_VALUE_VALID_CHARS['a']);
+        STATIC_CHECK(!HTTP_VALUE_VALID_CHARS['\r'] && !HTTP_VALUE_VALID_CHARS['\n'] && !HTTP_VALUE_VALID_CHARS['\0']);
 
         CHECK(validate_header_value_general("text/html; charset=utf-8"));
         CHECK(validate_header_value_general("value with\tspace and tab"));

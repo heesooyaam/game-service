@@ -22,6 +22,30 @@ namespace {
         return is_digit(c) || (uc >= 'a' && uc <= 'f') || (uc >= 'A' && uc <= 'F');
     }
 
+    constexpr std::string_view trim_ows(std::string_view sv) noexcept {
+        while (!sv.empty() && (sv.front() == ' ' || sv.front() == '\t')) {
+            sv.remove_prefix(1);
+        }
+        while (!sv.empty() && (sv.back() == ' ' || sv.back() == '\t')) {
+            sv.remove_suffix(1);
+        }
+        return sv;
+    }
+
+    std::vector<std::string_view> split(std::string_view data) {
+        std::vector<std::string_view> result;
+        size_t prev_pointer = 0, current_pointer = 0;
+        while (current_pointer < data.size()) {
+            if (data[current_pointer] == ',') {
+                result.emplace_back(trim_ows(data.substr(prev_pointer, current_pointer - prev_pointer)));
+                prev_pointer = current_pointer + 1;
+            }
+            ++current_pointer;
+        }
+        result.emplace_back(trim_ows(data.substr(prev_pointer, current_pointer - prev_pointer)));
+        return result;
+    }
+
     bool validate_content_length_transfer_encoding(const NHttp::THttpHeaders& headers, std::string_view body) {
         auto transfer_encoding_value_opt = headers.get_value("Transfer-Encoding");
         if (transfer_encoding_value_opt.has_value()) {
@@ -125,7 +149,9 @@ namespace NHttp::NModel {
             }
 
             std::string_view host_value = host_values.front();
-            if (host_value.find(',') != std::string_view::npos || host_value.find(' ') != std::string_view::npos) {
+            if (host_value.find(',') != std::string_view::npos || 
+                host_value.find(' ') != std::string_view::npos || 
+                host_value.find('\t') != std::string_view::npos) { 
                 return false;
             }
         }
@@ -181,8 +207,34 @@ namespace NHttp::NModel {
 
         {
             auto content_length_value_opt = headers.get_value("Content-Length");
-            if (status == EHttpResponseStatus::SWITCHING_PROTOCOLS || status == EHttpResponseStatus::NO_CONTENT) {
+            if (status == EHttpResponseStatus::NO_CONTENT) {
                 if (content_length_value_opt.has_value()) {
+                    return false;
+                }
+            } else if (status == EHttpResponseStatus::SWITCHING_PROTOCOLS) {
+                if (content_length_value_opt.has_value()) {
+                    return false;
+                }
+                auto upgrade_value_opt = headers.get_value("Upgrade");
+                if (!upgrade_value_opt.has_value()) {
+                    return false;
+                } 
+                
+                std::string_view upgrade = "Upgrade";
+                bool find_upgrade_token = false;
+                auto connection_values = headers.get_values("Connection");
+                for (std::string_view value : connection_values) {
+                    if (find_upgrade_token) {
+                        break;
+                    }
+                    for (std::string_view current_value : split(value)) {
+                        if (NHttp::is_equal_case_insensitive(upgrade, current_value)) {
+                            find_upgrade_token = true;
+                            break;
+                        }
+                    }
+                }
+                if (!find_upgrade_token) {
                     return false;
                 }
             } else if (status == EHttpResponseStatus::CREATED) {

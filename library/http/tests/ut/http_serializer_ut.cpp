@@ -181,7 +181,8 @@ namespace NHttp::NTests {
             check(!validate_origin_form_target("index.html"));           
             check(!validate_origin_form_target("/path with spaces"));     
             check(!validate_origin_form_target("/path%2"));              
-            check(!validate_origin_form_target("/path%2G"));         
+            check(!validate_origin_form_target("/path%2G"));    
+            check(!validate_origin_form_target(("/users#admin")));     
 
             {
                 THttpHeaders headers;
@@ -315,16 +316,44 @@ namespace NHttp::NTests {
             }
 
             {
+                constexpr auto STATUS = EHttpResponseStatus::SWITCHING_PROTOCOLS;
                 THttpHeaders h1; 
-                check(validate_headers_response(h1, "", EHttpResponseStatus::SWITCHING_PROTOCOLS));
+                h1.add("Upgrade", "websocket");
+                h1.add("Connection", "Upgrade");
+                check(validate_headers_response(h1, "", STATUS));
 
                 THttpHeaders h2;
-                h2.add("Content-Length", "0");
-                check(!validate_headers_response(h2, "", EHttpResponseStatus::SWITCHING_PROTOCOLS));
+                h2.add("Upgrade", "HTTP/2.0");
+                h2.add("Connection", "keep-alive, uPgRaDe");
+                check(validate_headers_response(h2, "", STATUS));
 
                 THttpHeaders h3;
-                h3.add("Transfer-Encoding", "chunked");
-                check(!validate_headers_response(h3, "", EHttpResponseStatus::SWITCHING_PROTOCOLS));
+                check(!validate_headers_response(h3, "", STATUS));
+
+                THttpHeaders h4;
+                h4.add("Connection", "Upgrade");
+                check(!validate_headers_response(h4, "", STATUS));
+
+                THttpHeaders h5;
+                h5.add("Upgrade", "websocket");
+                check(!validate_headers_response(h5, "", STATUS));
+
+                THttpHeaders h6;
+                h6.add("Upgrade", "websocket");
+                h6.add("Connection", "keep-alive, close");
+                check(!validate_headers_response(h6, "", STATUS));
+
+                THttpHeaders h7;
+                h7.add("Upgrade", "websocket");
+                h7.add("Connection", "Upgrade");
+                h7.add("Content-Length", "0");
+                check(!validate_headers_response(h7, "", STATUS));
+
+                THttpHeaders h8;
+                h8.add("Upgrade", "websocket");
+                h8.add("Connection", "Upgrade");
+                h8.add("Transfer-Encoding", "chunked");
+                check(!validate_headers_response(h8, "", STATUS));
             }
 
             {
@@ -500,7 +529,8 @@ namespace NHttp::NTests {
             verify(req, 
                 "GET / HTTP/1.1\r\n"
                 "Host: example.com\r\n"
-                "Accept: text/html, application/json\r\n"
+                "Accept: text/html\r\n"
+                "Accept: application/json\r\n"
                 "\r\n"
             );
         }
@@ -517,7 +547,8 @@ namespace NHttp::NTests {
             verify(req, 
                 "GET / HTTP/1.1\r\n"
                 "Host: example.com\r\n"
-                "Cookie: session=123; theme=dark\r\n"
+                "Cookie: session=123\r\n"
+                "Cookie: theme=dark\r\n"
                 "\r\n"
             );
         }
@@ -730,7 +761,8 @@ namespace NHttp::NTests {
             verify(resp, 
                 "HTTP/1.1 500 INTERNAL SERVER ERROR\r\n"
                 "Date: Mon, 10 Aug 2026 21:25:35 GMT\r\n"
-                "X-Error-Code: E1, E2\r\n"
+                "X-Error-Code: E1\r\n"
+                "X-Error-Code: E2\r\n"
                 "\r\n"
             );
         }

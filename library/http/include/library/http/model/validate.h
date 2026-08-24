@@ -52,7 +52,7 @@ namespace NHttp::NModel {
         for (unsigned char c = '0'; c <= '9'; ++c) {
             valid_chars[c] = true;
         }
-        constexpr std::string_view uri_symbols = "-._~:/?#[]@!$&'()*+,;=%";
+        constexpr std::string_view uri_symbols = "-._~:/?[]@!$&'()*+,;=%";
         for (unsigned char c : uri_symbols) {
             valid_chars[c] = true;
         }

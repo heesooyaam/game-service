@@ -120,6 +120,7 @@ namespace NHttp::NData {
         std::tm* now_tm = std::gmtime(&now_c);
 
         std::stringstream ss;
+        ss.imbue(std::locale::classic());
         ss << std::put_time(now_tm, "%a, %d %b %Y %H:%M:%S GMT");
         return ss.str();
     }

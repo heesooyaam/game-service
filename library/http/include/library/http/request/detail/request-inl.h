@@ -9,10 +9,7 @@
 #include <library/http/model/validate.h>
 #include <library/http/error.h>
 
-#include <algorithm>
 #include <cctype>
-#include <set>
-#include <string_view>
 
 namespace NHttp {
 
@@ -39,36 +36,9 @@ namespace NHttp {
                 << target_ << " "
                 << "HTTP/" << version_.major << "." << version_.minor << "\r\n";
 
-        auto comparator = [](std::string_view lhs, std::string_view rhs)  {
-            return std::lexicographical_compare(
-                lhs.begin(), lhs.end(),
-                rhs.begin(), rhs.end(),
-                [](unsigned char a, unsigned char b) {
-                    return std::tolower(a) < std::tolower(b);
-                }
-            );
-        };
-
-        std::set<std::string_view, decltype(comparator)> serialized_names(comparator);
+        
         for (const THttpHeader& header : headers_.items()) {
-            if (!serialized_names.insert(header.name()).second) {
-                continue;
-            }
-
-            char separator = ',';
-            if (is_equal_case_insensitive(header.name(), "Cookie")) {
-                separator = ';';
-            }
-
-            auto header_values = headers_.get_values(header.name());
-            ostream << header.name() << ": ";
-            for (size_t i = 0; i < header_values.size(); ++i) {
-                ostream << header_values[i];
-                if (i + 1 != header_values.size()) {
-                    ostream << separator << " ";
-                } 
-            }
-            ostream << "\r\n";
+            ostream << header.name() << ": " << header.value() << "\r\n";
         }
 
         ostream << "\r\n";

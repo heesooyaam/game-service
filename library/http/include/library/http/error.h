@@ -62,4 +62,4 @@ namespace NHttp::NError {
         explicit THttpTooManyHeaders(size_t count);
     };
 
-}  //namespace NHttp::NError
+}  // namespace NHttp::NError

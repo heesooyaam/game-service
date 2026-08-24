@@ -32,4 +32,4 @@ namespace NHttp {
 
     bool is_equal_case_insensitive(std::string_view lhs, std::string_view rhs) noexcept;
 
-} //namespace NHttp
+} // namespace NHttp

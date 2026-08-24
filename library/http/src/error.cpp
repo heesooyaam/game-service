@@ -104,4 +104,4 @@ namespace NHttp::NError {
         )
     {}
 
-} //namespace NHttp::NError
+} // namespace NHttp::NError

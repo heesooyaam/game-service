@@ -83,12 +83,14 @@ namespace NHttp::NData {
         }
 
         auto is_digit = [](char c) noexcept { return c >= '0' && c <= '9'; };
-        if (!is_digit(sv[5]) || !is_digit(sv[6]) ||   
+        if (
+            !is_digit(sv[5]) || !is_digit(sv[6]) ||   
             !is_digit(sv[12]) || !is_digit(sv[13]) ||   
             !is_digit(sv[14]) || !is_digit(sv[15]) ||
             !is_digit(sv[17]) || !is_digit(sv[18]) ||  
             !is_digit(sv[20]) || !is_digit(sv[21]) ||   
-            !is_digit(sv[23]) || !is_digit(sv[24])) {  
+            !is_digit(sv[23]) || !is_digit(sv[24])
+        ) {
             return false;
         }
 
@@ -117,11 +119,13 @@ namespace NHttp::NData {
     inline std::string get_current_http_date() {
         auto now = std::chrono::system_clock::now();
         std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-        std::tm* now_tm = std::gmtime(&now_c);
+        
+        std::tm now_tm{};
+        gmtime_r(&now_c, &now_tm);
 
         std::stringstream ss;
         ss.imbue(std::locale::classic());
-        ss << std::put_time(now_tm, "%a, %d %b %Y %H:%M:%S GMT");
+        ss << std::put_time(&now_tm, "%a, %d %b %Y %H:%M:%S GMT");
         return ss.str();
     }
 

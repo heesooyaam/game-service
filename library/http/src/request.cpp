@@ -62,4 +62,4 @@ namespace NHttp {
         return ostream;
     }
 
-} //namespace NHttp
+} // namespace NHttp

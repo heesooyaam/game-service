@@ -1,3 +1,4 @@
+#include "library/common/parse_number.h"
 #include <library/http/headers.h>
 #include <library/http/request/methods.h>
 #include <library/http/response/statuses.h>
@@ -32,11 +33,11 @@ namespace {
         return sv;
     }
 
-    std::vector<std::string_view> split(std::string_view data) {
+    std::vector<std::string_view> split(std::string_view data, char separator) {
         std::vector<std::string_view> result;
         size_t prev_pointer = 0, current_pointer = 0;
         while (current_pointer < data.size()) {
-            if (data[current_pointer] == ',') {
+            if (data[current_pointer] == separator) {
                 result.emplace_back(trim_ows(data.substr(prev_pointer, current_pointer - prev_pointer)));
                 prev_pointer = current_pointer + 1;
             }
@@ -69,13 +70,20 @@ namespace {
                 return false;
             }
             
-            if (std::to_string(body.size()) != content_length_value) {
+            auto expected_size_opt = NCommon::parse_number<size_t>(content_length_value);
+            if (!expected_size_opt.has_value() || expected_size_opt.value() != body.size()) {
                 return false;
             }
         } else if (!body.empty()) {
             return false;
         }
         return true;
+    }
+
+    bool validate_protocol(std::string_view protocol) {
+        return std::all_of(protocol.begin(), protocol.end(), [](char c) noexcept {
+            return NHttp::NModel::HTTP_PROTOCOL_VALID_CHARS[static_cast<unsigned char>(c)];
+        });
     }
 }
 
@@ -97,13 +105,13 @@ namespace NHttp::NModel {
             return false;
         }
         return std::all_of(name.begin(), name.end(), [](char c) noexcept {
-            return HTTP_CHAR_NAME_VALID_CHARS[static_cast<unsigned char>(c)];
+            return HTTP_NAME_VALID_CHARS[static_cast<unsigned char>(c)];
         });
     }
 
     bool validate_header_value_general(std::string_view value) {
         return std::all_of(value.begin(), value.end(), [](char c) noexcept {
-            return HTTP_CHAR_VALUE_VALID_CHARS[static_cast<unsigned char>(c)];
+            return HTTP_VALUE_VALID_CHARS[static_cast<unsigned char>(c)];
         });
     }
 
@@ -124,7 +132,7 @@ namespace NHttp::NModel {
 
         for (size_t i = 0; i < target.size(); ++i) {
             const unsigned char c = static_cast<unsigned char>(target[i]);
-            if (!HTTP_CHAR_TARGET_VALID_CHARS[c]) {
+            if (!HTTP_TARGET_VALID_CHARS[c]) {
                 return false;
             }
 
@@ -215,28 +223,46 @@ namespace NHttp::NModel {
                 if (content_length_value_opt.has_value()) {
                     return false;
                 }
-                auto upgrade_value_opt = headers.get_value("Upgrade");
-                if (!upgrade_value_opt.has_value()) {
-                    return false;
-                } 
-                
-                std::string_view upgrade = "Upgrade";
-                bool find_upgrade_token = false;
-                auto connection_values = headers.get_values("Connection");
-                for (std::string_view value : connection_values) {
-                    if (find_upgrade_token) {
-                        break;
-                    }
-                    for (std::string_view current_value : split(value)) {
-                        if (NHttp::is_equal_case_insensitive(upgrade, current_value)) {
-                            find_upgrade_token = true;
-                            break;
+
+                {
+                    bool found_good_protocol = false;
+                    auto upgrade_values = headers.get_values("Upgrade");
+                    for (std::string_view value : upgrade_values) {
+                        for (std::string_view current_value : split(value, ',')) {
+                            if (current_value.empty()) {
+                                continue;
+                            } 
+                            if (!validate_protocol(current_value)) {
+                                return false;
+                            }
+                            found_good_protocol = true;
                         }
                     }
+                    if (!found_good_protocol) {
+                        return false;
+                    }
                 }
-                if (!find_upgrade_token) {
-                    return false;
+                
+                {
+                    std::string_view upgrade = "Upgrade";
+                    bool find_upgrade_token = false;
+                    auto connection_values = headers.get_values("Connection");
+                    for (std::string_view value : connection_values) {
+                        if (find_upgrade_token) {
+                            break;
+                        }
+                        for (std::string_view current_value : split(value, ',')) {
+                            if (NHttp::is_equal_case_insensitive(upgrade, current_value)) {
+                                find_upgrade_token = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!find_upgrade_token) {
+                        return false;
+                    }
                 }
+                
             } else if (status == EHttpResponseStatus::CREATED) {
                 auto location_values = headers.get_values("Location");
                 if (location_values.size() > 1) {
@@ -255,4 +281,4 @@ namespace NHttp::NModel {
         return true;
     }
 
-} //namespace NHttp::NModel
+} // namespace NHttp::NModel

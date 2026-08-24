@@ -12,4 +12,4 @@ namespace NHttp {
         bool operator!=(const THttpVersion& other) const noexcept;
     };
 
-} //namespace NHttp
+} // namespace NHttp

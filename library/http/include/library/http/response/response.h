@@ -38,7 +38,7 @@ namespace NHttp {
 
     std::ostream& operator<<(std::ostream&, const THttpResponse&);
 
-} //namespace NHttp
+} // namespace NHttp
 
 
 #define LIBRARY_HTTP_RESPONSE_H

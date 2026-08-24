@@ -10,4 +10,4 @@ namespace NHttp {
         return !(*this == other);
     }
 
-} //namespace NHttp
+} // namespace NHttp

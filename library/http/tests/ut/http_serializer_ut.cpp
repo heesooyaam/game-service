@@ -166,6 +166,7 @@ namespace NHttp::NTests {
         CHECK(!validate_origin_form_target("/path%2"));              
         CHECK(!validate_origin_form_target("/path%2G"));    
         CHECK(!validate_origin_form_target(("/users#admin")));     
+        CHECK(!validate_origin_form_target(("/[x]")));     
 
         THttpHeaders headers;
         headers.add("Host", "example.com");

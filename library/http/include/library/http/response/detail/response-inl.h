@@ -45,4 +45,4 @@ namespace NHttp {
         ostream << body_;
     }   
 
-} //namespace NHttp
+} // namespace NHttp

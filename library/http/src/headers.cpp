@@ -75,4 +75,4 @@ namespace NHttp {
         return true;
     }
 
-} //namespace NHttp
+} // namespace NHttp

@@ -41,7 +41,7 @@ namespace NHttp {
 
     std::ostream& operator<<(std::ostream&, const THttpRequest&);
 
-} //namespace NHttp
+} // namespace NHttp
 
 
 #define LIBRARY_HTTP_REQUEST_H

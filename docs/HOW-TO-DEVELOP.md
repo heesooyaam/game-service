@@ -1569,16 +1569,16 @@ ctest --test-dir build -R '^event_loop_' --output-on-failure
 
 ### 19.2. Строгая сборка и санитайзеры
 
-Общие compiler options лежат в `cmake/CompilerOptions.cmake`. Обычная локальная
-сборка включает `-Wall`, `-Wextra`, `-Wpedantic`, `-Wshadow` и `-Wformat=2`, но
-не превращает warnings в ошибки.
+Общие compiler options лежат в `cmake/CompilerOptions.cmake`. Любая сборка через
+корневой `CMakeLists.txt`, в том числе обычная локальная, включает `-Wall`,
+`-Wextra`, `-Wpedantic`, `-Wshadow`, `-Wformat=2` и `-Werror`.
 
 В CI используется матрица из трех профилей:
 
 ```text
 GCC / strict            warnings + -Werror
-Clang / ASan + UBSan    warnings + -Werror + memory/undefined behavior checks
-Clang / TSan            warnings + -Werror + data race checks
+GCC / ASan + UBSan      warnings + -Werror + memory/undefined behavior checks
+GCC / TSan              warnings + -Werror + data race checks
 ```
 
 Запустить те же профили локально на Linux можно так:
@@ -1586,15 +1586,13 @@ Clang / TSan            warnings + -Werror + data race checks
 ```bash
 # Строгая сборка
 cmake -S . -B build-strict \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -DTURN_FORGE_WARNINGS_AS_ERRORS=ON
+    -DCMAKE_BUILD_TYPE=Debug
 cmake --build build-strict --parallel
 ctest --test-dir build-strict --output-on-failure
 
 # AddressSanitizer + UndefinedBehaviorSanitizer
 cmake -S . -B build-asan \
     -DCMAKE_BUILD_TYPE=Debug \
-    -DTURN_FORGE_WARNINGS_AS_ERRORS=ON \
     -DTURN_FORGE_SANITIZER=address-undefined
 cmake --build build-asan --parallel
 ctest --test-dir build-asan --output-on-failure
@@ -1602,16 +1600,16 @@ ctest --test-dir build-asan --output-on-failure
 # ThreadSanitizer
 cmake -S . -B build-tsan \
     -DCMAKE_BUILD_TYPE=Debug \
-    -DTURN_FORGE_WARNINGS_AS_ERRORS=ON \
     -DTURN_FORGE_SANITIZER=thread
 cmake --build build-tsan --parallel
 ctest --test-dir build-tsan --output-on-failure
 ```
 
 ASan и TSan запускаются отдельно: эти runtimes нельзя надежно объединить в одном
-процессе. MSan намеренно не включен, потому что ему нужна инструментированная
-стандартная библиотека; для текущего учебного проекта это слишком тяжелая
-инфраструктура.
+процессе. ASan ищет неверные обращения к памяти, а MSan — чтение
+неинициализированных значений. MSan намеренно не включен: ему нужна отдельная
+Clang-сборка с инструментированной стандартной библиотекой и зависимостями; для
+текущего учебного проекта это слишком тяжелая инфраструктура.
 
 ## 20. Полный учебный образец: library/common
 

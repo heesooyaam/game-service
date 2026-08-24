@@ -1,12 +1,20 @@
+#include <library/http/error.h>
 #include <library/http/request/request.h>
+#include <library/http/model/validate.h>
 
 namespace NHttp {
 
-    void THttpRequest::set_method(EHttpRequestMethod method) noexcept {
+    void THttpRequest::set_method(EHttpRequestMethod method) {
+        if (!NModel::validate_method(method)) {
+            throw NError::THttpNotSetMethod();
+        }
         method_ = method;
     }
 
     void THttpRequest::set_target(std::string target) {
+        if (!NModel::validate_origin_form_target(target)) {
+            throw NError::THttpBadTarget(target);
+        }
         target_ = std::move(target);
     }
 
@@ -15,6 +23,9 @@ namespace NHttp {
     }
 
     void THttpRequest::set_body(std::string body) {
+        if (!NModel::validate_body(body)) {
+            throw NError::THttpBadBody(body.size());
+        }
         body_ = std::move(body);
     }
 
@@ -42,4 +53,13 @@ namespace NHttp {
         return body_;
     }
 
-} //namespace NHttp
+    bool THttpRequest::valid() const {
+        return NModel::validate_method(method_) && NModel::validate_origin_form_target(target_) && NModel::validate_headers_request(headers_, body_, method_);
+    }
+
+    std::ostream& operator<<(std::ostream& ostream, const THttpRequest& http_request) {
+        http_request.serialize(ostream);
+        return ostream;
+    }
+
+} // namespace NHttp

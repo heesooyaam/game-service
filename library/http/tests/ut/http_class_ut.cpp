@@ -6,8 +6,6 @@
 #include <library/http/error.h>
 
 #include <cstdlib>
-#include <string>
-#include <utility>
 
 namespace NHttp::NTests {
 

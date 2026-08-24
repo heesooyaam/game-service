@@ -4,6 +4,7 @@ add_library(http
     src/request.cpp
     src/response.cpp
     src/version.cpp
+    src/validate.cpp
 )
 
 target_include_directories(http

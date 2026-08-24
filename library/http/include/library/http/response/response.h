@@ -5,6 +5,7 @@
 #include <library/http/response/statuses.h>
 
 #include <string>
+#include <ostream>
 
 namespace NHttp {
 
@@ -12,7 +13,7 @@ namespace NHttp {
     public:
 
         void set_version(THttpVersion);
-        void set_status(EHttpResponseStatus) noexcept;
+        void set_status(EHttpResponseStatus);
         void set_body(std::string);
 
         const THttpVersion& version() const noexcept;
@@ -23,6 +24,11 @@ namespace NHttp {
 
         const std::string& body() const noexcept;
 
+        template <typename TOstream>
+        void serialize(TOstream& ostream) const;
+
+        bool valid() const;
+
     private:
         THttpVersion version_;
         EHttpResponseStatus status_ = EHttpResponseStatus::NOT_SET;
@@ -30,4 +36,11 @@ namespace NHttp {
         std::string body_;
     };
 
-} //namespace NHttp
+    std::ostream& operator<<(std::ostream&, const THttpResponse&);
+
+} // namespace NHttp
+
+
+#define LIBRARY_HTTP_RESPONSE_H
+#include <library/http/response/detail/response-inl.h>
+#undef LIBRARY_HTTP_RESPONSE_H

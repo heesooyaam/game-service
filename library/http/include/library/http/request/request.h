@@ -5,13 +5,14 @@
 #include <library/http/request/methods.h>
 
 #include <string>
+#include <ostream>
 
 namespace NHttp {
 
     class THttpRequest {
     public:
 
-        void set_method(EHttpRequestMethod) noexcept;
+        void set_method(EHttpRequestMethod);
         void set_target(std::string);
         void set_version(THttpVersion);
         void set_body(std::string);
@@ -25,6 +26,11 @@ namespace NHttp {
 
         const std::string& body() const noexcept;
 
+        template <typename TOstream>
+        void serialize(TOstream& ostream) const;
+
+        bool valid() const;
+        
     private:
         EHttpRequestMethod method_ = EHttpRequestMethod::NOT_SET;
         std::string target_;
@@ -33,4 +39,11 @@ namespace NHttp {
         std::string body_;
     };
 
-} //namespace NHttp
+    std::ostream& operator<<(std::ostream&, const THttpRequest&);
+
+} // namespace NHttp
+
+
+#define LIBRARY_HTTP_REQUEST_H
+#include <library/http/request/detail/request-inl.h>
+#undef LIBRARY_HTTP_REQUEST_H

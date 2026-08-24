@@ -480,8 +480,8 @@ namespace NJson {
                     assert(rhs_ptr);
                     return *lhs_ptr == *rhs_ptr;
                 },
-                []<typename T>(const T& lhs, const T& rhs) {
-                    return lhs == rhs;
+                []<typename T>(const T& lhs_value, const T& rhs_value) {
+                    return lhs_value == rhs_value;
                 },
                 []<typename TLeft, typename TRight>(const TLeft&, const TRight&) {
                     return false;

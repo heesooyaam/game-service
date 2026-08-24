@@ -144,7 +144,8 @@ namespace NJson::NTests {
         CHECK(original.get_array()[0].get_integer() == 1);
 
         // Self-assignment copy
-        copied_assign = copied_assign;
+        const auto* copied_assign_self = &copied_assign;
+        copied_assign = *copied_assign_self;
         CHECK(copied_assign.is_array() && copied_assign.get_array()[0].get_integer() == 99);
     }
 
@@ -165,7 +166,8 @@ namespace NJson::NTests {
         CHECK(original_obj.is_null());
 
         // Self-assignment move
-        moved_assign = std::move(moved_assign);
+        auto* moved_assign_self = &moved_assign;
+        moved_assign = std::move(*moved_assign_self);
         CHECK(moved_assign.is_object());
     }
 

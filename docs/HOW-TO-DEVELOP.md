@@ -1528,11 +1528,88 @@ ctest --test-dir build -R common
 запусти только тесты, имя которых подходит под common
 ```
 
-Запустить только тесты `json`, когда они появятся:
+Запустить только тесты `json`:
 
 ```bash
 ctest --test-dir build -R json
 ```
+
+### 19.1. Как тесты попадают в CI
+
+CI не хранит отдельный список тестов. Он собирает проект и запускает CTest:
+
+```bash
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure --no-tests=error
+```
+
+Новый тест автоматически запустится в CI, если выполнены три условия:
+
+1. Для него создан executable через `add_executable`.
+2. Его `CMakeLists.txt` достижим из корневого CMake через `add_subdirectory`.
+3. Executable зарегистрирован в CTest через `add_test`.
+
+Сам workflow для каждого нового теста менять не нужно.
+
+Сейчас CI запускает все тесты. Для маленького проекта это быстрее и надежнее,
+чем поддерживать отдельную карту зависимостей между измененными файлами и тестами.
+Когда набор тестов станет действительно долгим, его можно разделить с помощью
+CTest labels или отдельных задач CI.
+
+Локально можно сразу запускать только нужную часть. Имена тестов начинаются с
+названия библиотеки:
+
+```bash
+cmake --build build --target json_parser_ut
+ctest --test-dir build -R '^json_' --output-on-failure
+
+cmake --build build --target event_loop_ut
+ctest --test-dir build -R '^event_loop_' --output-on-failure
+```
+
+### 19.2. Строгая сборка и санитайзеры
+
+Общие compiler options лежат в `cmake/CompilerOptions.cmake`. Любая сборка через
+корневой `CMakeLists.txt`, в том числе обычная локальная, включает `-Wall`,
+`-Wextra`, `-Wpedantic`, `-Wshadow`, `-Wformat=2` и `-Werror`.
+
+В CI используется матрица из трех профилей:
+
+```text
+GCC / strict            warnings + -Werror
+GCC / ASan + UBSan      warnings + -Werror + memory/undefined behavior checks
+GCC / TSan              warnings + -Werror + data race checks
+```
+
+Запустить те же профили локально на Linux можно так:
+
+```bash
+# Строгая сборка
+cmake -S . -B build-strict \
+    -DCMAKE_BUILD_TYPE=Debug
+cmake --build build-strict --parallel
+ctest --test-dir build-strict --output-on-failure
+
+# AddressSanitizer + UndefinedBehaviorSanitizer
+cmake -S . -B build-asan \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DTURN_FORGE_SANITIZER=address-undefined
+cmake --build build-asan --parallel
+ctest --test-dir build-asan --output-on-failure
+
+# ThreadSanitizer
+cmake -S . -B build-tsan \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DTURN_FORGE_SANITIZER=thread
+cmake --build build-tsan --parallel
+ctest --test-dir build-tsan --output-on-failure
+```
+
+ASan и TSan запускаются отдельно: эти runtimes нельзя надежно объединить в одном
+процессе. ASan ищет неверные обращения к памяти, а MSan — чтение
+неинициализированных значений. MSan намеренно не включен: ему нужна отдельная
+Clang-сборка с инструментированной стандартной библиотекой и зависимостями; для
+текущего учебного проекта это слишком тяжелая инфраструктура.
 
 ## 20. Полный учебный образец: library/common
 

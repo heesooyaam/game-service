@@ -68,8 +68,7 @@ namespace NHttp::NModel {
             bool is_digit = (c >= '0' && c <= '9');
             bool is_special = (c == '!' || c == '#' || c == '$' || c == '%' || c == '&' || 
                             c == '\'' || c == '*' || c == '+' || c == '-' || c == '.' || 
-                            c == '^' || c == '_' || c == '`' || c == '|' || c == '~' || 
-                            c == '/');
+                            c == '^' || c == '_' || c == '`' || c == '|' || c == '~');
                             
             valid_chars[i] = is_alpha || is_digit || is_special;
         }

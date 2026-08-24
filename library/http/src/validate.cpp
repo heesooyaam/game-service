@@ -81,9 +81,25 @@ namespace {
     }
 
     bool validate_protocol(std::string_view protocol) {
-        return std::all_of(protocol.begin(), protocol.end(), [](char c) noexcept {
-            return NHttp::NModel::HTTP_PROTOCOL_VALID_CHARS[static_cast<unsigned char>(c)];
-        });
+        assert(!protocol.empty());
+        
+        if (protocol.front() == '/' || protocol.back() == '/') {
+            return false; 
+        }
+
+        bool found_slash = false;
+        for (char c : protocol) {
+            if (c == '/') {
+                if (found_slash) {
+                    return false;
+                }
+                found_slash = true;
+            } else if (!NHttp::NModel::HTTP_PROTOCOL_VALID_CHARS[static_cast<unsigned char>(c)]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
 
@@ -172,8 +188,11 @@ namespace NHttp::NModel {
 
             auto content_length_value_opt = headers.get_value("Content-Length");
             if (method == EHttpRequestMethod::GET || method == EHttpRequestMethod::HEAD) {
-                if (content_length_value_opt.has_value() && content_length_value_opt.value() != std::string("0")) {
-                    return false;
+                if (content_length_value_opt.has_value()) {
+                    auto expected_size_opt = NCommon::parse_number<size_t>(content_length_value_opt.value());
+                    if (!expected_size_opt.has_value() || expected_size_opt.value() != 0) {
+                        return false;
+                    }
                 }
             }
         }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <array>
 #include <chrono>
 #include <ctime>
 #include <iomanip>
@@ -16,10 +15,6 @@ namespace NHttp::NData {
 
     constexpr int parse_4digit(std::string_view s) noexcept {
         return (s[0] - '0') * 1000 + (s[1] - '0') * 100 + (s[2] - '0') * 10 + (s[3] - '0');
-    }
-
-    constexpr bool is_leap_year(int year) noexcept {
-        return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
     }
 
     constexpr int parse_month(std::string_view m) noexcept {
@@ -51,17 +46,23 @@ namespace NHttp::NData {
         return 0;
     }
 
-    constexpr bool is_valid_weekday(std::string_view wkday) noexcept {
-        return wkday == "Mon" || wkday == "Tue" || wkday == "Wed" ||
-            wkday == "Thu" || wkday == "Fri" || wkday == "Sat" || wkday == "Sun";
-    }
-
-    constexpr int days_in_month(int month, int year) noexcept {
-        constexpr std::array<int, 13> days = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-        if (month == 2 && is_leap_year(year)) {
-            return 29;
+    constexpr int parse_weekday(std::string_view wkday) noexcept {
+        if (wkday == "Sun") {
+            return 0;
+        } else if (wkday == "Mon") {
+            return 1;
+        } else if (wkday == "Tue") {
+            return 2;
+        } else if (wkday == "Wed") {
+            return 3;
+        } else if (wkday == "Thu") {
+            return 4;
+        } else if (wkday == "Fri") {
+            return 5;
+        } else if (wkday == "Sat") {
+            return 6;
         }
-        return days[month];
+        return -1;
     }
 
     constexpr bool is_valid_http_date(std::string_view sv) noexcept {
@@ -78,11 +79,10 @@ namespace NHttp::NData {
             return false;
         }
 
-        if (!NHttp::NData::is_valid_weekday(sv.substr(0, 3))) {
-            return false;
-        }
-
-        auto is_digit = [](char c) noexcept { return c >= '0' && c <= '9'; };
+        const auto is_digit = [](char c) noexcept {
+            return c >= '0' && c <= '9';
+        };
+        
         if (
             !is_digit(sv[5]) || !is_digit(sv[6]) ||   
             !is_digit(sv[12]) || !is_digit(sv[13]) ||   
@@ -91,6 +91,11 @@ namespace NHttp::NData {
             !is_digit(sv[20]) || !is_digit(sv[21]) ||   
             !is_digit(sv[23]) || !is_digit(sv[24])
         ) {
+            return false;
+        }
+
+        const int expected_wd = NHttp::NData::parse_weekday(sv.substr(0, 3));
+        if (expected_wd == -1) {
             return false;
         }
 
@@ -105,11 +110,22 @@ namespace NHttp::NData {
             return false;
         }
 
-        if (day < 1 || day > NHttp::NData::days_in_month(month, year)) {
+        if (hour > 23 || minute > 59 || second > 60) {
             return false;
         }
 
-        if (hour > 23 || minute > 59 || second > 60) {
+        std::chrono::year_month_day ymd{
+            std::chrono::year(year),
+            std::chrono::month(month),
+            std::chrono::day(day)
+        };
+
+        if (!ymd.ok()) {
+            return false;
+        }
+
+        std::chrono::weekday real_wd{std::chrono::sys_days{ymd}};
+        if (static_cast<int>(real_wd.c_encoding()) != expected_wd) {
             return false;
         }
 

@@ -29,6 +29,11 @@ namespace NHttp::NTests {
         STATIC_CHECK(NData::is_valid_http_date("Thu, 30 Apr 2020 15:30:00 GMT"));
         STATIC_CHECK(NData::is_valid_http_date("Sun, 31 May 2020 15:30:00 GMT"));
         STATIC_CHECK(NData::is_valid_http_date("Sat, 31 Oct 2020 23:59:59 GMT"));
+
+        STATIC_CHECK(NData::is_valid_http_date("Sun, 06 Nov 1994 08:49:37 GMT"));
+        STATIC_CHECK(!NData::is_valid_http_date("Mon, 06 Nov 1994 08:49:37 GMT"));
+        STATIC_CHECK(!NData::is_valid_http_date("Tue, 29 Feb 1994 08:49:37 GMT"));
+        STATIC_CHECK(NData::is_valid_http_date("Thu, 29 Feb 1996 08:49:37 GMT"));
     }
 
     TEST_CASE(test_date_runtime) {
@@ -246,6 +251,16 @@ namespace NHttp::NTests {
         h7.add("Host", "example.com");
         h7.add("Transfer-Encoding", "cHuNkEd");
         CHECK(!validate_headers_request(h7, "1", EHttpRequestMethod::POST));
+
+        THttpHeaders h8;
+        h8.add("Host", "example.com");
+        h8.add("Content-Length", "0");
+        CHECK(validate_headers_request(h8, "", EHttpRequestMethod::GET));
+
+        THttpHeaders h9;
+        h9.add("Host", "example.com");
+        h9.add("Content-Length", "00");
+        CHECK(validate_headers_request(h9, "", EHttpRequestMethod::GET));
     }
 
     TEST_CASE(test_model_validation_response) {
@@ -373,6 +388,24 @@ namespace NHttp::NTests {
         THttpHeaders no_auth;
         no_auth.add("Date", std::string(valid_date));
         CHECK(!validate_headers_response(no_auth, "", EHttpResponseStatus::UNAUTHORIZED));
+
+
+        THttpHeaders h_bad1;
+        h_bad1.add("Upgrade", "/foo");
+        CHECK(!validate_headers_response(h_bad1, "", EHttpResponseStatus::SWITCHING_PROTOCOLS));
+
+        THttpHeaders h_bad2;
+        h_bad2.add("Upgrade", "foo/");
+        CHECK(!validate_headers_response(h_bad2, "", EHttpResponseStatus::SWITCHING_PROTOCOLS));
+
+        THttpHeaders h_bad3;
+        h_bad3.add("Upgrade", "foo/bar/baz");
+        CHECK(!validate_headers_response(h_bad3, "", EHttpResponseStatus::SWITCHING_PROTOCOLS));
+
+        THttpHeaders h_good1;
+        h_good1.add("Upgrade", "foo, foo/bar");
+        h_good1.add("Connection", "Upgrade");
+        CHECK(validate_headers_response(h_good1, "", EHttpResponseStatus::SWITCHING_PROTOCOLS));
     }
 
     TEST_CASE(test_request_serialization) {

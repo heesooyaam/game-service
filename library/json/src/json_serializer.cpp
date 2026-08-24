@@ -117,7 +117,7 @@ namespace NJson {
         }
     }
 
-    void TJsonSerializer::serialize_null(const TJsonValue& json) {
+    void TJsonSerializer::serialize_null(const TJsonValue&) {
         ostream_ << std::string("null");
     }
 

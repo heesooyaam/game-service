@@ -15,15 +15,42 @@ concurrency:
 
 jobs:
   build-and-test:
-    name: Build and test
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: GCC / strict
+            cc: gcc
+            cxx: g++
+            sanitizer: none
+          - name: Clang / ASan + UBSan
+            cc: clang
+            cxx: clang++
+            sanitizer: address-undefined
+          - name: Clang / TSan
+            cc: clang
+            cxx: clang++
+            sanitizer: thread
+
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+      ASAN_OPTIONS: detect_leaks=1:check_initialization_order=1:strict_string_checks=1
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+      TSAN_OPTIONS: halt_on_error=1
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+        run: >-
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Debug
+          -DTURN_FORGE_WARNINGS_AS_ERRORS=ON
+          -DTURN_FORGE_SANITIZER=${{ matrix.sanitizer }}
 
       - name: Build
         run: cmake --build build --parallel

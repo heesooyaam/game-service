@@ -391,14 +391,17 @@ namespace NHttp::NTests {
 
 
         THttpHeaders h_bad1;
+        h_bad1.add("Connection", "Upgrade");
         h_bad1.add("Upgrade", "/foo");
         CHECK(!validate_headers_response(h_bad1, "", EHttpResponseStatus::SWITCHING_PROTOCOLS));
 
         THttpHeaders h_bad2;
+        h_bad2.add("Connection", "Upgrade");
         h_bad2.add("Upgrade", "foo/");
         CHECK(!validate_headers_response(h_bad2, "", EHttpResponseStatus::SWITCHING_PROTOCOLS));
 
         THttpHeaders h_bad3;
+        h_bad3.add("Connection", "Upgrade");
         h_bad3.add("Upgrade", "foo/bar/baz");
         CHECK(!validate_headers_response(h_bad3, "", EHttpResponseStatus::SWITCHING_PROTOCOLS));
 

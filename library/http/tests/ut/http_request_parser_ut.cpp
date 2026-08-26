@@ -5,7 +5,6 @@
 #include <library/http/request/parser.h>
 #include <library/http/request/request.h>
 
-#include <iostream>
 #include <string>
 
 namespace NHttp::NTests {

@@ -15,6 +15,52 @@ namespace NHttp::NError {
         )
     {}
 
+    THttpRequestParseError::THttpRequestParseError(std::string_view label, std::string_view msg)
+        : std::runtime_error(
+            std::format(
+                "[{}]: {}", 
+                label,
+                msg
+            )
+        )
+    {}
+
+    THttpBadParseRequestLine::THttpBadParseRequestLine(std::string_view label, std::string_view msg)
+        : THttpRequestParseError(
+            "HTTP PARSE ERROR",
+            std::format(
+                "{} ( {} )",
+                label,
+                msg
+            )
+        )
+    {}
+
+    THttpBadParseHeader::THttpBadParseHeader(std::string_view label, std::string_view msg)
+        : THttpRequestParseError(
+            "HTTP PARSE ERROR",
+            std::format(
+                "{} ( {} )",
+                label,
+                msg
+            )
+        )
+    {}
+
+    THttpBadParseBodySize::THttpBadParseBodySize()
+        : THttpRequestParseError(
+            "HTTP PARSE ERROR",
+            "BAD CONTENT LENGTH"
+        )
+    {}
+
+    THttpBadParseResult::THttpBadParseResult()
+        : THttpRequestParseError(
+            "HTTP PARSE ERROR",
+            "NOT VALID REQUEST"
+        )
+    {}
+
     THttpBadVersion::THttpBadVersion(THttpVersion bad_version)
         : THttpError(
             "HTTP BAD VERSION",

@@ -12,6 +12,31 @@ namespace NHttp::NError {
         explicit THttpError(std::string_view, std::string_view);
     };
 
+    class THttpRequestParseError : public std::runtime_error {
+    protected:
+        explicit THttpRequestParseError(std::string_view, std::string_view);
+    };
+
+    class THttpBadParseRequestLine : public THttpRequestParseError {
+    public:
+        explicit THttpBadParseRequestLine(std::string_view label, std::string_view msg);
+    };
+
+    class THttpBadParseHeader : public THttpRequestParseError {
+    public:
+        explicit THttpBadParseHeader(std::string_view label, std::string_view msg);
+    };
+
+    class THttpBadParseBodySize : public THttpRequestParseError {
+    public:
+        THttpBadParseBodySize();
+    };
+
+    class THttpBadParseResult : public THttpRequestParseError {
+    public:
+        THttpBadParseResult();
+    };
+
     class THttpBadVersion : public THttpError {
     public:
         explicit THttpBadVersion(THttpVersion);

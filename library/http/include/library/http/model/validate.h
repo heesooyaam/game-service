@@ -85,6 +85,7 @@ namespace NHttp::NModel {
     bool validate_header_name_general(std::string_view);
     bool validate_header_value_general(std::string_view);
     bool validate_body(std::string_view);
+    bool validate_body(size_t size) noexcept;
 
     bool validate_method(EHttpRequestMethod) noexcept;
     bool validate_origin_form_target(std::string_view);

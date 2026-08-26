@@ -1,6 +1,6 @@
 #include <library/http/error.h>
-#include <library/http/request/request.h>
 #include <library/http/model/validate.h>
+#include <library/http/request/request.h>
 
 namespace NHttp {
 
@@ -27,6 +27,20 @@ namespace NHttp {
             throw NError::THttpBadBody(body.size());
         }
         body_ = std::move(body);
+    }
+
+    void THttpRequest::add_body(std::string data) {
+        if (!NModel::validate_body(body_.size() + data.size())) {
+            throw NError::THttpBadBody(body_.size() + data.size());
+        }
+        body_ += data;
+    }
+    
+    void THttpRequest::reserve_body(size_t capacity) {
+        if (!NModel::validate_body(capacity)) {
+            throw NError::THttpBadBody(capacity);
+        }
+        body_.reserve(capacity);
     }
 
     EHttpRequestMethod THttpRequest::method() const noexcept {

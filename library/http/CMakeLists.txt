@@ -2,6 +2,7 @@ add_library(http
     src/error.cpp
     src/headers.cpp
     src/request.cpp
+    src/request_parser.cpp
     src/response.cpp
     src/version.cpp
     src/validate.cpp

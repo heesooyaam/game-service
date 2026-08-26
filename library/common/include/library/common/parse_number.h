@@ -26,4 +26,4 @@ namespace NCommon {
         return value;
     }
 
-} //namespace NCommon
+} // namespace NCommon

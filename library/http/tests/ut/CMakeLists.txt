@@ -6,6 +6,10 @@ add_executable(http_serializer_ut
     http_serializer_ut.cpp
 )
 
+add_executable(http_request_parser_ut
+    http_request_parser_ut.cpp
+)
+
 target_link_libraries(http_class_ut
     PRIVATE
         http
@@ -18,5 +22,12 @@ target_link_libraries(http_serializer_ut
         test_framework
 )
 
+target_link_libraries(http_request_parser_ut
+    PRIVATE
+        http
+        test_framework
+)
+
 add_test(NAME http_class_ut COMMAND http_class_ut)
 add_test(NAME http_serializer_ut COMMAND http_serializer_ut)
+add_test(NAME http_request_parser_ut COMMAND http_request_parser_ut)

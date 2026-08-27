@@ -25,7 +25,6 @@ namespace NHttp {
         THttpRequestParser& operator=(THttpRequestParser&&) = delete;
 
         THttpRequestParserFeedResult feed(std::string_view data);
-        std::optional<THttpRequest> request();
     private:
         enum class EHttpRequestParserState : uint8_t {
             REQUEST_LINE = 0,
@@ -35,6 +34,7 @@ namespace NHttp {
         };
 
         THttpRequest request_;
+        size_t prev_pos_ = 0;
         EHttpRequestParserState state_ = EHttpRequestParserState::REQUEST_LINE;
 
         void clear();

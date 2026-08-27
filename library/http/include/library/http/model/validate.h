@@ -12,6 +12,8 @@ namespace NHttp::NModel {
 
     inline constexpr size_t MAX_COUNTER_HEADERS = 100;
     inline constexpr size_t MAX_COUNTER_BYTES_BODY = 16384;
+    inline constexpr size_t MAX_COUNTER_BYTES_REQUEST_LINE = 8192;
+    inline constexpr size_t MAX_COUNTER_BYTES_HEADER = 8192;
 
     constexpr auto make_http_name_valid_chars() {
         std::array<bool, 256> valid_chars{};

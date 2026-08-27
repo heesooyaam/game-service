@@ -12,7 +12,7 @@ namespace NHttp::NError {
         explicit THttpError(std::string_view, std::string_view);
     };
 
-    class THttpRequestParseError : public std::runtime_error {
+    class THttpRequestParseError : public THttpError {
     protected:
         explicit THttpRequestParseError(std::string_view, std::string_view);
     };

@@ -355,4 +355,195 @@ namespace NHttp::NTests {
         CHECK(request_ready); 
     }
 
+    TEST_CASE(test_http_parser_strict_request_line) {
+        {
+            THttpRequestParser parser;
+            CHECK_THROWS_AS(
+                parser.feed("GET\t/ HTTP/1.1\r\nHost: ya.ru\r\n\r\n"),
+                NError::THttpBadParseRequestLine
+            );
+        }
+
+        {
+            THttpRequestParser parser;
+            CHECK_THROWS_AS(
+                parser.feed("GET\t / HTTP/1.1\r\nHost: ya.ru\r\n\r\n"),
+                NError::THttpBadParseRequestLine
+            );
+        }
+
+        {
+            THttpRequestParser parser;
+            CHECK_THROWS_AS(
+                parser.feed("GET  / HTTP/1.1\r\nHost: ya.ru\r\n\r\n"),
+                NError::THttpBadParseRequestLine
+            );
+        }
+
+        {
+            THttpRequestParser parser;
+            CHECK_THROWS_AS(
+                parser.feed("GET / HTTP/1.1 \r\nHost: ya.ru\r\n\r\n"),
+                NError::THttpBadParseRequestLine
+            );
+        }
+    }
+
+    TEST_CASE(test_http_parser_socket_byte_by_byte) {
+        THttpRequestParser parser;
+        std::string full_request = "GET / HTTP/1.1\r\nHost: a\r\nAccept: */*\r\n\r\n";
+        std::string socket_buffer;
+
+        for (size_t i = 0; i < full_request.size(); ++i) {
+            socket_buffer += full_request[i];
+            auto result = parser.feed(socket_buffer);
+            socket_buffer.erase(0, result.parsed_bytes);
+
+            if (i == full_request.size() - 1) {
+                CHECK(result.requests.size() == 1);
+                CHECK(result.requests[0].target() == "/");
+                CHECK(socket_buffer.empty());
+            } else {
+                CHECK(result.requests.empty());
+            }
+        }
+    }
+
+    TEST_CASE(test_http_parser_socket_pipelining_fragmentation) {
+        THttpRequestParser parser;
+        std::string socket_buffer;
+
+        socket_buffer += "GET /1 HTTP/1.1\r\nHost: a\r\n\r\nGE";
+        auto res1 = parser.feed(socket_buffer);
+        CHECK(res1.requests.size() == 1);
+        CHECK(res1.requests[0].target() == "/1");
+        socket_buffer.erase(0, res1.parsed_bytes);
+
+        socket_buffer += "T /2 HTTP/1.1\r\nHost: b\r\n\r\nPOST /3 HTTP";
+        auto res2 = parser.feed(socket_buffer);
+        CHECK(res2.requests.size() == 1);
+        CHECK(res2.requests[0].target() == "/2");
+        socket_buffer.erase(0, res2.parsed_bytes);
+
+        socket_buffer += "/1.1\r\nHost: c\r\nContent-Length: 4\r\n\r\n12";
+        auto res3 = parser.feed(socket_buffer);
+        CHECK(res3.requests.empty());
+        socket_buffer.erase(0, res3.parsed_bytes);
+
+        socket_buffer += "34";
+        auto res4 = parser.feed(socket_buffer);
+        CHECK(res4.requests.size() == 1);
+        CHECK(res4.requests[0].target() == "/3");
+        CHECK(res4.requests[0].body() == "1234");
+        socket_buffer.erase(0, res4.parsed_bytes);
+        CHECK(socket_buffer.empty());
+    }
+
+    TEST_CASE(test_http_parser_socket_crlf_split) {
+        THttpRequestParser parser;
+        std::string socket_buffer;
+
+        socket_buffer += "GET / HTTP/1.1\r";
+        auto res1 = parser.feed(socket_buffer);
+        socket_buffer.erase(0, res1.parsed_bytes);
+        CHECK(res1.requests.empty());
+
+        socket_buffer += "\nHost: a\r";
+        auto res2 = parser.feed(socket_buffer);
+        socket_buffer.erase(0, res2.parsed_bytes);
+        CHECK(res2.requests.empty());
+
+        socket_buffer += "\n\r";
+        auto res3 = parser.feed(socket_buffer);
+        socket_buffer.erase(0, res3.parsed_bytes);
+        CHECK(res3.requests.empty());
+
+        socket_buffer += "\n";
+        auto res4 = parser.feed(socket_buffer);
+        socket_buffer.erase(0, res4.parsed_bytes);
+        CHECK(res4.requests.size() == 1);
+        CHECK(res4.requests[0].method() == EHttpRequestMethod::GET);
+    }
+
+    TEST_CASE(test_http_parser_socket_body_exact_boundary) {
+        THttpRequestParser parser;
+        std::string socket_buffer;
+
+        socket_buffer += "POST / HTTP/1.1\r\nHost: a\r\nContent-Length: 5\r\n\r\n1234";
+        auto res1 = parser.feed(socket_buffer);
+        socket_buffer.erase(0, res1.parsed_bytes);
+        CHECK(res1.requests.empty());
+
+        socket_buffer += "5GET /2 HTTP/1.1\r\nHost: b\r\n\r\n";
+        auto res2 = parser.feed(socket_buffer);
+        socket_buffer.erase(0, res2.parsed_bytes);
+        
+        CHECK(res2.requests.size() == 2);
+        CHECK(res2.requests[0].method() == EHttpRequestMethod::POST);
+        CHECK(res2.requests[0].body() == "12345");
+        CHECK(res2.requests[1].method() == EHttpRequestMethod::GET);
+        CHECK(res2.requests[1].target() == "/2");
+        CHECK(socket_buffer.empty());
+    }
+
+    TEST_CASE(test_http_parser_socket_keep_alive_noise) {
+        THttpRequestParser parser;
+        std::string socket_buffer;
+
+        socket_buffer += "\r\n\r\nGE";
+        auto res1 = parser.feed(socket_buffer);
+        socket_buffer.erase(0, res1.parsed_bytes);
+        
+        socket_buffer += "T / HTTP/1.1\r\nHost: a\r\n\r\n\r\n\r";
+        auto res2 = parser.feed(socket_buffer);
+        socket_buffer.erase(0, res2.parsed_bytes);
+        CHECK(res2.requests.size() == 1);
+        
+        socket_buffer += "\n";
+        auto res3 = parser.feed(socket_buffer);
+        socket_buffer.erase(0, res3.parsed_bytes);
+        CHECK(res3.requests.empty());
+        CHECK(socket_buffer.empty());
+    }
+
+    TEST_CASE(test_http_parser_strict_version) {
+        {
+            THttpRequestParser parser;
+            auto res = parser.feed("GET / HTTP/1.1\r\nHost: a\r\n\r\n");
+            CHECK(res.requests.size() == 1);
+        }
+
+        {
+            THttpRequestParser parser;
+            CHECK_THROWS_AS(
+                parser.feed("GET / HTTP/1.0\r\nHost: a\r\n\r\n"), 
+                NError::THttpBadParseRequestLine
+            );
+        }
+
+        {
+            THttpRequestParser parser;
+            CHECK_THROWS_AS(
+                parser.feed("GET / HTTP/01.01\r\nHost: a\r\n\r\n"), 
+                NError::THttpBadParseRequestLine
+            );
+        }
+
+        {
+            THttpRequestParser parser;
+            CHECK_THROWS_AS(
+                parser.feed("GET / HTTP/2\r\nHost: a\r\n\r\n"), 
+                NError::THttpBadParseRequestLine
+            );
+        }
+        
+        {
+            THttpRequestParser parser;
+            CHECK_THROWS_AS(
+                parser.feed("GET / http/1.1\r\nHost: a\r\n\r\n"), 
+                NError::THttpBadParseRequestLine
+            );
+        }
+    }
+
 } // namespace NHttp::NTests

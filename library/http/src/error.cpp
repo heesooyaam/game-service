@@ -16,13 +16,7 @@ namespace NHttp::NError {
     {}
 
     THttpRequestParseError::THttpRequestParseError(std::string_view label, std::string_view msg)
-        : std::runtime_error(
-            std::format(
-                "[{}]: {}", 
-                label,
-                msg
-            )
-        )
+        : THttpError(label, msg)
     {}
 
     THttpBadParseRequestLine::THttpBadParseRequestLine(std::string_view label, std::string_view msg)

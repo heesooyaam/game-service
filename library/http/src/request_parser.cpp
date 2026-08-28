@@ -19,7 +19,7 @@ namespace NHttp {
 
         class TDetailParser {
         public:
-            explicit TDetailParser(std::string_view data, size_t position)
+            explicit TDetailParser(std::string_view data, size_t position, size_t& parsed_bytes)
                 : data_(data)
                 , current_position_(position)
                 , previous_position_(0)
@@ -27,6 +27,9 @@ namespace NHttp {
             {
                 if (position > 0 && data[position - 1] == '\r') {
                     --current_position_;
+                
+                    assert(parsed_bytes != 0);
+                    --parsed_bytes;
                 }
             }
 
@@ -72,6 +75,20 @@ namespace NHttp {
                 return current_position_ == data_.size();
             }
 
+    
+            std::pair<size_t, size_t> find_char_or_crlf(char ch, size_t size_search) {
+                std::string_view view = substr_to_find(size_search);
+                for (size_t i = 0; i < view.size(); ++i) {
+                    if (view[i] == ch) {
+                        return std::make_pair(current_position_ + i, std::string_view::npos);
+                    }
+                    if (view[i] == '\r' && i + 1 < view.size() && view[i + 1] == '\n') {
+                        return std::make_pair(std::string_view::npos, current_position_ + i);
+                    }
+                }
+                return {std::string_view::npos, std::string_view::npos};
+            }
+
             size_t find(std::string_view str, size_t size_search) {
                 size_t idx = substr_to_find(size_search).find(str);
                 if (idx != std::string_view::npos) {
@@ -109,7 +126,7 @@ namespace NHttp {
             bool stop_;
         };
 
-        TDetailParser parser(data, last_position_);
+        TDetailParser parser(data, last_position_, parsed_bytes_current_state_);
 
         while (parser.work()) {
             if (state_ == EHttpRequestParserState::KEEP_ALIVE) {
@@ -144,10 +161,9 @@ namespace NHttp {
                 }
 
                 size_t search_len = std::min(size_available, size_left);
-                size_t space_pos = parser.find(' ', search_len);
-                size_t crlf_pos = parser.find("\r\n", search_len);
+                auto [space_pos, crlf_pos] = parser.find_char_or_crlf(' ', search_len);
 
-                if (crlf_pos < space_pos) {
+                if (crlf_pos != std::string_view::npos) {
                     std::string_view parsing = "METHOD";
                     if (state_ == EHttpRequestParserState::TARGET) {
                         parsing = "TARGET";
@@ -231,8 +247,7 @@ namespace NHttp {
                 }
 
                 size_t search_len = std::min(size_available, size_left);
-                size_t colon_pos = parser.find(':', search_len);
-                size_t crlf_pos = parser.find("\r\n", search_len);
+                auto [colon_pos, crlf_pos] = parser.find_char_or_crlf(':', search_len);                
 
                 if (parser.previos_position() == crlf_pos) {
                     parser.put_at_position(crlf_pos + 2);
@@ -241,7 +256,7 @@ namespace NHttp {
                     continue;
                 }
 
-                if (crlf_pos < colon_pos) {
+                if (crlf_pos != std::string_view::npos) {
                     throw NError::THttpBadParseHeader(
                         "BAD REQUEST HEADER NO COLON", 
                         parser.substr(

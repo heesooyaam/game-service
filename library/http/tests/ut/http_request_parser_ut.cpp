@@ -551,4 +551,31 @@ namespace NHttp::NTests {
         }
     }
 
+    TEST_CASE(test_http_parser_crlf_split_at_limit) {
+        THttpRequestParser parser;
+        std::string socket_buffer;
+        
+        std::string req = "GET /";
+        req.append(NModel::MAX_REQUEST_LINE_SIZE_BYTES - 5 - 11, 'a'); 
+        req += " HTTP/1.1\r";
+        
+        CHECK(req.size() + 1 == NModel::MAX_REQUEST_LINE_SIZE_BYTES);
+
+        socket_buffer = req;
+        auto res1 = parser.feed(socket_buffer);
+        CHECK(res1.requests.empty());
+
+        socket_buffer.erase(0, res1.parsed_bytes);
+
+        socket_buffer += "\n"; 
+        CHECK(socket_buffer == "HTTP/1.1\r\n");
+        
+        try {
+            auto res2 = parser.feed(socket_buffer);
+        } catch(...) {
+            CHECK(false);
+        }
+        
+    }
+
 } // namespace NHttp::NTests

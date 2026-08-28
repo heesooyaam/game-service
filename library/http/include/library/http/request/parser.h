@@ -27,15 +27,21 @@ namespace NHttp {
         THttpRequestParserFeedResult feed(std::string_view data);
     private:
         enum class EHttpRequestParserState : uint8_t {
-            REQUEST_LINE = 0,
-            HEADERS,
+            KEEP_ALIVE = 0,
+            METHOD,
+            TARGET,
+            VERSION,
+            HEADER_NAME,
+            HEADER_VALUE,
             BODY,
-            COMPLETE,
+            COMPLETE
         };
 
         THttpRequest request_;
-        size_t prev_pos_ = 0;
-        EHttpRequestParserState state_ = EHttpRequestParserState::REQUEST_LINE;
+        size_t last_position_ = 0;
+        size_t parsed_bytes_current_state_ = 0;
+        std::optional<std::string> name_opt_ = std::nullopt;
+        EHttpRequestParserState state_ = EHttpRequestParserState::KEEP_ALIVE;
 
         void clear();
     };

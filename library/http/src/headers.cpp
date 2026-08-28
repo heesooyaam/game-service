@@ -27,6 +27,10 @@ namespace NHttp {
             throw NError::THttpTooManyHeaders(headers_.size());
         }
 
+        if (!NModel::validate_headers_size(total_size_ + name.size() + value.size())) {
+            throw NError::THttpTooBigHeaders(total_size_ + name.size() + value.size());
+        }
+
         if (!NModel::validate_header_name_general(name)) {
             throw NError::THttpBadHeaderName(name);
         }
@@ -35,6 +39,7 @@ namespace NHttp {
             throw NError::THttpBadHeaderValue(value);
         }
 
+        total_size_ += name.size() + value.size();
         headers_.emplace_back(std::move(name), std::move(value));
     }
 
@@ -60,6 +65,10 @@ namespace NHttp {
 
     const std::vector<THttpHeader>& THttpHeaders::items() const noexcept {
         return headers_;
+    }
+
+    size_t THttpHeaders::total_size() const noexcept {
+        return total_size_;
     }
 
     bool is_equal_case_insensitive(std::string_view lhs, std::string_view rhs) noexcept {

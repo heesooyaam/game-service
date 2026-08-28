@@ -144,4 +144,14 @@ namespace NHttp::NError {
         )
     {}
 
+    THttpTooBigHeaders::THttpTooBigHeaders(size_t size) 
+        : THttpError(
+            "HTTP BAD HEADERS",
+            std::format(
+                "Too Big Total Headers Size ( the quantity reached: {} )",
+                size
+            )
+        )
+    {}
+
 } // namespace NHttp::NError

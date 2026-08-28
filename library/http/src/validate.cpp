@@ -87,8 +87,15 @@ namespace NHttp::NModel {
         return version == THttpVersion(1, 1);
     }
 
-    bool validate_headers_count(size_t size) noexcept {
-        if (size > MAX_COUNTER_HEADERS) {
+    bool validate_headers_count(size_t count) noexcept {
+        if (count > MAX_COUNTER_HEADERS) {
+            return false;
+        }
+        return true;
+    }
+
+    bool validate_headers_size(size_t size) noexcept {
+        if (size > MAX_HEADERS_SIZE_BYTES) {
             return false;
         }
         return true;
@@ -110,11 +117,11 @@ namespace NHttp::NModel {
     }
 
     bool validate_body(std::string_view body) {
-        return body.size() <= MAX_COUNTER_BYTES_BODY;
+        return body.size() <= MAX_BODY_SIZE_BYTES;
     }
 
     bool validate_body(size_t size) noexcept {
-        return size <= MAX_COUNTER_BYTES_BODY;
+        return size <= MAX_BODY_SIZE_BYTES;
     }
 
     bool validate_method(EHttpRequestMethod method) noexcept {

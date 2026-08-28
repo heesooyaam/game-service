@@ -154,8 +154,8 @@ namespace NHttp::NTests {
         CHECK(!validate_headers_count(MAX_COUNTER_HEADERS + 1));
 
         CHECK(validate_body(""));
-        CHECK(validate_body(std::string(MAX_COUNTER_BYTES_BODY, 'a')));
-        CHECK(!validate_body(std::string(MAX_COUNTER_BYTES_BODY + 1, 'a')));
+        CHECK(validate_body(std::string(MAX_BODY_SIZE_BYTES, 'a')));
+        CHECK(!validate_body(std::string(MAX_BODY_SIZE_BYTES + 1, 'a')));
     }
 
     TEST_CASE(test_model_validation_request) {

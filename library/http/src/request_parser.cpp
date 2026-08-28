@@ -9,6 +9,8 @@
 
 #include <cassert>
 #include <cctype>
+#include <string_view>
+#include <format>
 
 namespace NHttp {
 
@@ -19,132 +21,282 @@ namespace NHttp {
         public:
             explicit TDetailParser(std::string_view data, size_t position)
                 : data_(data)
-                , position_(position)
+                , current_position_(position)
+                , previous_position_(0)
+                , stop_(false)
             {
-                if (position_ > 0 && position_ <= data_.size() && data_[position_ - 1] == '\r') {
-                    position_ -= 1;
+                if (position > 0 && data[position - 1] == '\r') {
+                    --current_position_;
                 }
             }
 
-            size_t pos() {
-                return position_;
+            bool work() const noexcept {
+                return stop_ == false;
             }
 
-            size_t real_pos() {
-                return real_position_;
+            void stop() noexcept {
+                stop_ = true;
             }
 
-            void put(size_t new_pos) {
-                position_ = new_pos;
-                real_position_ = new_pos;
+            size_t current_position() const noexcept {
+                return current_position_;
             }
 
-            size_t pos_after(size_t count) {
-                return std::min(position_ + count, data_.size());
+            size_t previos_position() const noexcept {
+                return previous_position_;
             }
 
-            bool is_eof() {
-                return position_ >= data_.size();
+            void put_at_position(size_t new_position) noexcept {
+                current_position_ = new_position;
+                previous_position_ = new_position;
             }
 
-            bool can() {
-                return can_;
+            void move_on(size_t counter) noexcept {
+                current_position_ += counter;
+                previous_position_ += counter;
             }
 
-            size_t find_crlf() {
-                return data_.find("\r\n" , position_);
+            void put_current_position(size_t new_position) noexcept {
+                current_position_ = new_position;
             }
 
-            size_t find_from_real_pos(char symbol) {
-                return data_.find(symbol, real_position_);
+            bool is_crlf() {
+                if (current_position_ + 1 >= data_.size()) {
+                    return false;
+                }
+                return data_[current_position_] == '\r' && data_[current_position_ + 1] == '\n';
             }
 
-            void stop() {
-                can_ = false;
+            bool is_eof() const {
+                assert(current_position_ <= data_.size());
+                return current_position_ == data_.size();
+            }
+
+            size_t find(std::string_view str, size_t size_search) {
+                size_t idx = substr_to_find(size_search).find(str);
+                if (idx != std::string_view::npos) {
+                    idx += current_position_;
+                }
+                return idx;
+            }
+
+            size_t find(char ch, size_t size_search) {
+                size_t idx = substr_to_find(size_search).find(ch);
+                if (idx != std::string_view::npos) {
+                    idx += current_position_;
+                }
+                return idx;
+            }
+
+            std::string_view substr_to_find(size_t max_size) {
+                assert(current_position_ + max_size <= data_.size());
+                return data_.substr(current_position_,max_size);
             }
 
             std::string_view substr(size_t last) {
-                return data_.substr(real_position_, last - real_position_);
+                assert(previous_position_ <= last);
+                return data_.substr(previous_position_, last - previous_position_);
+            }
+
+            size_t pos_after(size_t count) {
+                return std::min(current_position_ + count, data_.size());
             }
 
         private:
             std::string_view data_;
-            size_t position_;
-            size_t real_position_ = 0;
-            bool can_ = true;
+            size_t current_position_;
+            size_t previous_position_;
+            bool stop_;
         };
 
-        TDetailParser helper(data, prev_pos_);
+        TDetailParser parser(data, last_position_);
 
-        while (helper.can()) {
-            if (state_ == EHttpRequestParserState::REQUEST_LINE) {     
-                size_t crlf_pos = helper.find_crlf();
-                if (crlf_pos == std::string_view::npos) {
-                    if (data.size() - helper.real_pos() > NModel::MAX_COUNTER_BYTES_REQUEST_LINE) {
+        while (parser.work()) {
+            if (state_ == EHttpRequestParserState::KEEP_ALIVE) {
+                while (!parser.is_eof() && parser.is_crlf()) {
+                    parser.move_on(2);
+                    parsed_bytes_current_state_ += 2;
+
+                    if (parsed_bytes_current_state_ > NModel::MAX_REQUEST_LINE_SIZE_BYTES) {
                         throw NError::THttpBadParseRequestLine("BAD REQUEST LINE", "TOO LONG"); 
                     }
-                    helper.stop();
+                }
+
+                if (parser.is_eof()) {
+                    parser.stop();
                     continue;
                 }
 
-                //avoid keep alive msg
-                if (crlf_pos == helper.real_pos()) { 
-                    helper.put(crlf_pos + 2);
+                if (parser.current_position() + 1 == data.size() && data[parser.current_position()] == '\r') {
+                    parser.stop();
                     continue;
                 }
 
-                auto values = NCommon::split(helper.substr(crlf_pos), ' ');
-                if (values.size() != 3 || helper.find_from_real_pos('\t') < crlf_pos) {
-                    throw NError::THttpBadParseRequestLine("BAD REQUEST LINE", helper.substr(crlf_pos));
+                state_ = EHttpRequestParserState::METHOD;
+            } else if (state_ == EHttpRequestParserState::METHOD || state_ == EHttpRequestParserState::TARGET) {
+                assert(NModel::MAX_REQUEST_LINE_SIZE_BYTES >= parsed_bytes_current_state_);
+
+                size_t size_left = NModel::MAX_REQUEST_LINE_SIZE_BYTES - parsed_bytes_current_state_;
+                size_t size_available = data.size() - parser.current_position();
+
+                if (size_left == 0) {
+                    throw NError::THttpBadParseRequestLine("BAD REQUEST LINE", "TOO LONG"); 
                 }
 
-                {
-                    auto method_opt = NEnum::enum_from_string<EHttpRequestMethod>(values.front());
+                size_t search_len = std::min(size_available, size_left);
+                size_t space_pos = parser.find(' ', search_len);
+                size_t crlf_pos = parser.find("\r\n", search_len);
+
+                if (crlf_pos < space_pos) {
+                    std::string_view parsing = "METHOD";
+                    if (state_ == EHttpRequestParserState::TARGET) {
+                        parsing = "TARGET";
+                    }
+                    throw NError::THttpBadParseRequestLine(
+                        std::format(
+                            "BAD REQUEST LINE NO SPACE TO PARSE {}", 
+                            parsing
+                        ), 
+                        parser.substr(
+                            std::min(data.size(), crlf_pos)
+                        )
+                    ); 
+                }
+                
+                if (space_pos == std::string_view::npos) {
+                    if (search_len == size_left) {
+                        throw NError::THttpBadParseRequestLine("BAD REQUEST LINE", "TOO LONG");
+                    }
+                    parsed_bytes_current_state_ += size_available;
+                    parser.put_current_position(data.size());
+                    parser.stop();
+                    continue;
+                } 
+                    
+                if (state_ == EHttpRequestParserState::METHOD) {
+                    std::string_view method = parser.substr(space_pos);
+                    auto method_opt = NEnum::enum_from_string<EHttpRequestMethod>(method);
                     if (!method_opt.has_value()) {
-                        throw NError::THttpBadParseRequestLine("BAD REQUEST METHOD", values.front());
+                        throw NError::THttpBadParseRequestLine("BAD REQUEST METHOD", method);
                     }
+                    
                     request_.set_method(method_opt.value());
+                    state_ = EHttpRequestParserState::TARGET;                
+                } else {
+                    std::string_view target = parser.substr(space_pos);
+                    request_.set_target(std::string(target));
+                    state_ = EHttpRequestParserState::VERSION;
                 }
-                
-                request_.set_target(std::string(values[1]));
-                
-                {
-                    std::string_view version_str = values.back();
-                    if (version_str != "HTTP/1.1") {
-                        throw NError::THttpBadParseRequestLine("BAD REQUEST HTTP VERSION", values.back());
-                    }
-                    request_.set_version(THttpVersion());
+                parsed_bytes_current_state_ += (space_pos + 1) - parser.current_position();
+                parser.put_at_position(space_pos + 1);
+            } else if (state_ == EHttpRequestParserState::VERSION) {
+                assert(NModel::MAX_REQUEST_LINE_SIZE_BYTES >= parsed_bytes_current_state_);
+
+                size_t size_left = NModel::MAX_REQUEST_LINE_SIZE_BYTES - parsed_bytes_current_state_;
+                size_t size_available = data.size() - parser.current_position();
+
+                if (size_left == 0) {
+                    throw NError::THttpBadParseRequestLine("BAD REQUEST LINE", "TOO LONG"); 
                 }
 
-                state_ = EHttpRequestParserState::HEADERS;
-                helper.put(crlf_pos + 2);
-            } else if (state_ == EHttpRequestParserState::HEADERS) {
-                size_t crlf_pos = helper.find_crlf();
-                if (crlf_pos == std::string_view::npos) {
-                    if (data.size() - helper.real_pos() > NModel::MAX_COUNTER_BYTES_HEADER) {
+                size_t search_len = std::min(size_available, size_left);
+                size_t crlf_pos = parser.find("\r\n", search_len);
+
+                if (crlf_pos == std::string::npos) {
+                    if (search_len == size_left) {
+                        throw NError::THttpBadParseRequestLine("BAD REQUEST LINE", "TOO LONG");
+                    }
+                    parsed_bytes_current_state_ += size_available;
+                    parser.put_current_position(data.size());
+                    parser.stop();
+                    continue;
+                } 
+
+                std::string_view version = parser.substr(crlf_pos);
+                if (version != "HTTP/1.1") {
+                    throw NError::THttpBadParseRequestLine("BAD REQUEST HTTP VERSION", version);
+                } 
+                request_.set_version(THttpVersion());
+                parser.put_at_position(crlf_pos + 2);
+                state_ = EHttpRequestParserState::HEADER_NAME;
+                parsed_bytes_current_state_ = 0;
+            } else if (state_ == EHttpRequestParserState::HEADER_NAME) {
+                assert(NModel::MAX_HEADERS_SIZE_BYTES >= parsed_bytes_current_state_);
+
+                size_t size_left = NModel::MAX_HEADERS_SIZE_BYTES - parsed_bytes_current_state_;
+                size_t size_available = data.size() - parser.current_position();
+
+                if (size_left == 0) {
+                    throw NError::THttpBadParseHeader("BAD HEADER", "TOO LONG"); 
+                }
+
+                size_t search_len = std::min(size_available, size_left);
+                size_t colon_pos = parser.find(':', search_len);
+                size_t crlf_pos = parser.find("\r\n", search_len);
+
+                if (parser.previos_position() == crlf_pos) {
+                    parser.put_at_position(crlf_pos + 2);
+                    state_ = EHttpRequestParserState::BODY;
+                    parsed_bytes_current_state_ = 0;
+                    continue;
+                }
+
+                if (crlf_pos < colon_pos) {
+                    throw NError::THttpBadParseHeader(
+                        "BAD REQUEST HEADER NO COLON", 
+                        parser.substr(
+                            std::min(data.size(), crlf_pos)
+                        )
+                    );
+                }
+
+                if (colon_pos == std::string_view::npos) {
+                    if (search_len == size_left) {
                         throw NError::THttpBadParseHeader("BAD HEADER", "TOO LONG"); 
                     }
-                    helper.stop();
+                    parsed_bytes_current_state_ += size_available;
+                    parser.put_current_position(data.size());
+                    parser.stop();
                     continue;
+                } 
+
+                std::string_view name = parser.substr(colon_pos);
+                name_opt_ = name;
+
+                parsed_bytes_current_state_ += (colon_pos + 1) - parser.current_position();
+                parser.put_at_position(colon_pos + 1);
+                state_ = EHttpRequestParserState::HEADER_VALUE;
+            } else if (state_ == EHttpRequestParserState::HEADER_VALUE) {
+                assert(NModel::MAX_HEADERS_SIZE_BYTES >= parsed_bytes_current_state_);
+
+                size_t size_left = NModel::MAX_HEADERS_SIZE_BYTES - parsed_bytes_current_state_;
+                size_t size_available = data.size() - parser.current_position();
+
+                if (size_left == 0) {
+                    throw NError::THttpBadParseHeader("BAD HEADER", "TOO LONG"); 
                 }
 
-                if (crlf_pos == helper.real_pos()) { 
-                    helper.put(crlf_pos + 2);
-                    state_ = EHttpRequestParserState::BODY;
+                size_t search_len = std::min(size_available, size_left);
+                size_t crlf_pos = parser.find("\r\n", search_len);
+
+                if (crlf_pos == std::string::npos) {
+                    if (search_len == size_left) {
+                        throw NError::THttpBadParseHeader("BAD HEADER", "TOO LONG"); 
+                    }
+                    parsed_bytes_current_state_ += size_available;
+                    parser.put_current_position(data.size());
+                    parser.stop();
                     continue;
-                }
+                } 
 
-                size_t colon_pos = helper.find_from_real_pos(':');
-                if (colon_pos == std::string_view::npos || colon_pos > crlf_pos) {
-                    throw NError::THttpBadParseHeader("BAD REQUEST HEADER NO COLON", helper.substr(crlf_pos));
-                }
+                std::string_view value = parser.substr(crlf_pos);
+                assert(name_opt_.has_value());
 
-                std::string_view name = helper.substr(colon_pos);
-                helper.put(colon_pos + 1);
-                std::string_view value = helper.substr(crlf_pos);
+                parsed_bytes_current_state_ += (crlf_pos + 2) - parser.current_position();
+                parser.put_at_position(crlf_pos + 2);
+                state_ = EHttpRequestParserState::HEADER_NAME;
 
-                request_.headers().add(std::string(name), std::string(NCommon::trim_ows(value)));
-                helper.put(crlf_pos + 2);
+                request_.headers().add(name_opt_.value(), std::string(NCommon::trim_ows(value)));                name_opt_.reset();
             } else if (state_ == EHttpRequestParserState::BODY) {
                 auto content_length_opt = request_.headers().get_value("Content-Length");
                 if (!content_length_opt.has_value()) {
@@ -161,17 +313,17 @@ namespace NHttp {
                 assert(size_opt.value() >= request_.body().size());
 
                 size_t left = size_opt.value() - request_.body().size();
-                size_t last_pos = helper.pos_after(left);
+                size_t last_pos = parser.pos_after(left);
 
-                request_.add_body(std::string(helper.substr(last_pos)));
-                helper.put(last_pos); 
+                request_.add_body(std::string(parser.substr(last_pos)));
+                parser.put_at_position(last_pos); 
 
                 if (request_.body().size() == size_opt.value()) {
                     state_ = EHttpRequestParserState::COMPLETE;
                 } else {
-                    helper.stop();
+                    parser.stop();
                 }
-            } else {
+            } else if (state_ == EHttpRequestParserState::COMPLETE) {
                 if (!request_.valid()) {
                     throw NError::THttpBadParseResult();
                 }
@@ -179,14 +331,16 @@ namespace NHttp {
                 clear();
             }
         }
-        result.parsed_bytes = helper.real_pos();
-        prev_pos_ = data.size() - result.parsed_bytes;
+        result.parsed_bytes = parser.previos_position();
+        last_position_ = parser.current_position() - parser.previos_position();
         return result;
     }
 
     void THttpRequestParser::clear() {
         request_ = THttpRequest();
-        state_ = EHttpRequestParserState::REQUEST_LINE;
+        parsed_bytes_current_state_ = 0;
+        state_ = EHttpRequestParserState::KEEP_ALIVE;
+        assert(name_opt_.has_value() == false);
     }
   
 } // namespace NHttp

@@ -87,4 +87,9 @@ namespace NHttp::NError {
         explicit THttpTooManyHeaders(size_t count);
     };
 
+    class THttpTooBigHeaders : public THttpError {
+    public:
+        explicit THttpTooBigHeaders(size_t size);
+    };
+
 }  // namespace NHttp::NError

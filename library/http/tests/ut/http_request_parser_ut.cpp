@@ -106,7 +106,6 @@ namespace NHttp::NTests {
         CHECK(req.body() == "Hello, World!");
     }
 
-    // 4. ТЕСТИРОВАНИЕ СКЛЕЙКИ ЗАПРОСОВ (Pipelining)
     TEST_CASE(test_http_parser_pipelining) {
         THttpRequestParser parser;
 
@@ -279,15 +278,17 @@ namespace NHttp::NTests {
         socket_buffer += "POST /api/v1/use";
         auto res1 = parser.feed(socket_buffer);
         CHECK(res1.requests.empty());
-        CHECK(res1.parsed_bytes == 0);
+        CHECK(res1.parsed_bytes == 5);
+
+        socket_buffer.erase(0, res1.parsed_bytes);
 
         socket_buffer += "rs HTTP/1.1\r\nHost: ya";
         auto res2 = parser.feed(socket_buffer);
         CHECK(res2.requests.empty());
-        CHECK(res2.parsed_bytes == std::string("POST /api/v1/use").size() + std::string("rs HTTP/1.1\r\n").size());
+        CHECK(res2.parsed_bytes == std::string("/api/v1/use").size() + std::string("rs HTTP/1.1\r\nHost:").size());
         socket_buffer.erase(0, res2.parsed_bytes);
         
-        CHECK(socket_buffer == "Host: ya");
+        CHECK(socket_buffer == " ya");
         socket_buffer += ".ru\r\nContent-Length: 5\r\n\r\n12";
         auto res3 = parser.feed(socket_buffer);
         CHECK(res3.requests.empty());
@@ -314,12 +315,14 @@ namespace NHttp::NTests {
         socket_buffer += "GET / HTTP/1.1\r";
         auto res1 = parser.feed(socket_buffer);
         CHECK(res1.requests.empty());
-        CHECK(res1.parsed_bytes == 0);
+        CHECK(res1.parsed_bytes == 6);
+
+        socket_buffer.erase(0, res1.parsed_bytes);
 
         socket_buffer += "\nHost: a\r";
         auto res2 = parser.feed(socket_buffer);
         CHECK(res2.requests.empty());
-        CHECK(res2.parsed_bytes == std::string("GET / HTTP/1.1\r").size() + std::string("\n").size());
+        CHECK(res2.parsed_bytes == std::string("HTTP/1.1\r").size() + std::string("\nHost:").size());
         socket_buffer.erase(0, res2.parsed_bytes);
 
         socket_buffer += "\n\r\n";
@@ -376,7 +379,7 @@ namespace NHttp::NTests {
             THttpRequestParser parser;
             CHECK_THROWS_AS(
                 parser.feed("GET  / HTTP/1.1\r\nHost: ya.ru\r\n\r\n"),
-                NError::THttpBadParseRequestLine
+                NError::THttpBadTarget
             );
         }
 
@@ -493,7 +496,9 @@ namespace NHttp::NTests {
         socket_buffer += "\r\n\r\nGE";
         auto res1 = parser.feed(socket_buffer);
         socket_buffer.erase(0, res1.parsed_bytes);
-        
+
+        CHECK(res1.parsed_bytes == 4);
+
         socket_buffer += "T / HTTP/1.1\r\nHost: a\r\n\r\n\r\n\r";
         auto res2 = parser.feed(socket_buffer);
         socket_buffer.erase(0, res2.parsed_bytes);

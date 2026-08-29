@@ -12,6 +12,31 @@ namespace NHttp::NError {
         explicit THttpError(std::string_view, std::string_view);
     };
 
+    class THttpRequestParseError : public THttpError {
+    protected:
+        explicit THttpRequestParseError(std::string_view, std::string_view);
+    };
+
+    class THttpBadParseRequestLine : public THttpRequestParseError {
+    public:
+        explicit THttpBadParseRequestLine(std::string_view label, std::string_view msg);
+    };
+
+    class THttpBadParseHeader : public THttpRequestParseError {
+    public:
+        explicit THttpBadParseHeader(std::string_view label, std::string_view msg);
+    };
+
+    class THttpBadParseBodySize : public THttpRequestParseError {
+    public:
+        THttpBadParseBodySize();
+    };
+
+    class THttpBadParseResult : public THttpRequestParseError {
+    public:
+        THttpBadParseResult();
+    };
+
     class THttpBadVersion : public THttpError {
     public:
         explicit THttpBadVersion(THttpVersion);
@@ -60,6 +85,11 @@ namespace NHttp::NError {
     class THttpTooManyHeaders : public THttpError {
     public:
         explicit THttpTooManyHeaders(size_t count);
+    };
+
+    class THttpTooBigHeaders : public THttpError {
+    public:
+        explicit THttpTooBigHeaders(size_t size);
     };
 
 }  // namespace NHttp::NError

@@ -1,4 +1,6 @@
-#include "library/common/parse_number.h"
+#include <library/common/parse_number.h>
+#include <library/common/split.h>
+
 #include <library/http/headers.h>
 #include <library/http/request/methods.h>
 #include <library/http/response/statuses.h>
@@ -21,30 +23,6 @@ namespace {
     constexpr bool is_hex_digit(char c) {
         const auto uc = static_cast<unsigned char>(c);
         return is_digit(c) || (uc >= 'a' && uc <= 'f') || (uc >= 'A' && uc <= 'F');
-    }
-
-    constexpr std::string_view trim_ows(std::string_view sv) noexcept {
-        while (!sv.empty() && (sv.front() == ' ' || sv.front() == '\t')) {
-            sv.remove_prefix(1);
-        }
-        while (!sv.empty() && (sv.back() == ' ' || sv.back() == '\t')) {
-            sv.remove_suffix(1);
-        }
-        return sv;
-    }
-
-    std::vector<std::string_view> split(std::string_view data, char separator) {
-        std::vector<std::string_view> result;
-        size_t prev_pointer = 0, current_pointer = 0;
-        while (current_pointer < data.size()) {
-            if (data[current_pointer] == separator) {
-                result.emplace_back(trim_ows(data.substr(prev_pointer, current_pointer - prev_pointer)));
-                prev_pointer = current_pointer + 1;
-            }
-            ++current_pointer;
-        }
-        result.emplace_back(trim_ows(data.substr(prev_pointer, current_pointer - prev_pointer)));
-        return result;
     }
 
     bool validate_content_length_transfer_encoding(const NHttp::THttpHeaders& headers, std::string_view body) {
@@ -109,8 +87,15 @@ namespace NHttp::NModel {
         return version == THttpVersion(1, 1);
     }
 
-    bool validate_headers_count(size_t size) noexcept {
-        if (size > MAX_COUNTER_HEADERS) {
+    bool validate_headers_count(size_t count) noexcept {
+        if (count > MAX_COUNTER_HEADERS) {
+            return false;
+        }
+        return true;
+    }
+
+    bool validate_headers_size(size_t size) noexcept {
+        if (size > MAX_HEADERS_SIZE_BYTES) {
             return false;
         }
         return true;
@@ -132,7 +117,11 @@ namespace NHttp::NModel {
     }
 
     bool validate_body(std::string_view body) {
-        return body.size() <= MAX_COUNTER_BYTES_BODY;
+        return body.size() <= MAX_BODY_SIZE_BYTES;
+    }
+
+    bool validate_body(size_t size) noexcept {
+        return size <= MAX_BODY_SIZE_BYTES;
     }
 
     bool validate_method(EHttpRequestMethod method) noexcept {
@@ -247,7 +236,7 @@ namespace NHttp::NModel {
                     bool found_good_protocol = false;
                     auto upgrade_values = headers.get_values("Upgrade");
                     for (std::string_view value : upgrade_values) {
-                        for (std::string_view current_value : split(value, ',')) {
+                        for (std::string_view current_value : NCommon::split(value, ',')) {
                             if (current_value.empty()) {
                                 continue;
                             } 
@@ -270,7 +259,7 @@ namespace NHttp::NModel {
                         if (find_upgrade_token) {
                             break;
                         }
-                        for (std::string_view current_value : split(value, ',')) {
+                        for (std::string_view current_value : NCommon::split(value, ',')) {
                             if (NHttp::is_equal_case_insensitive(upgrade, current_value)) {
                                 find_upgrade_token = true;
                                 break;

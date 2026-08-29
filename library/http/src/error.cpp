@@ -15,6 +15,46 @@ namespace NHttp::NError {
         )
     {}
 
+    THttpRequestParseError::THttpRequestParseError(std::string_view label, std::string_view msg)
+        : THttpError(label, msg)
+    {}
+
+    THttpBadParseRequestLine::THttpBadParseRequestLine(std::string_view label, std::string_view msg)
+        : THttpRequestParseError(
+            "HTTP PARSE ERROR",
+            std::format(
+                "{} ( {} )",
+                label,
+                msg
+            )
+        )
+    {}
+
+    THttpBadParseHeader::THttpBadParseHeader(std::string_view label, std::string_view msg)
+        : THttpRequestParseError(
+            "HTTP PARSE ERROR",
+            std::format(
+                "{} ( {} )",
+                label,
+                msg
+            )
+        )
+    {}
+
+    THttpBadParseBodySize::THttpBadParseBodySize()
+        : THttpRequestParseError(
+            "HTTP PARSE ERROR",
+            "BAD CONTENT LENGTH"
+        )
+    {}
+
+    THttpBadParseResult::THttpBadParseResult()
+        : THttpRequestParseError(
+            "HTTP PARSE ERROR",
+            "NOT VALID REQUEST"
+        )
+    {}
+
     THttpBadVersion::THttpBadVersion(THttpVersion bad_version)
         : THttpError(
             "HTTP BAD VERSION",
@@ -100,6 +140,16 @@ namespace NHttp::NError {
             std::format(
                 "Too Many Headers ( the quantity reached: {} )",
                 count
+            )
+        )
+    {}
+
+    THttpTooBigHeaders::THttpTooBigHeaders(size_t size) 
+        : THttpError(
+            "HTTP BAD HEADERS",
+            std::format(
+                "Too Big Total Headers Size ( the quantity reached: {} )",
+                size
             )
         )
     {}

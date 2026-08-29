@@ -17,6 +17,9 @@ namespace NHttp {
         void set_version(THttpVersion);
         void set_body(std::string);
 
+        void add_body(std::string);
+        void reserve_body(size_t capacity);
+
         EHttpRequestMethod method() const noexcept;
         const std::string& target() const noexcept;
         const THttpVersion& version() const noexcept;

@@ -1,5 +1,6 @@
 add_library(common
     src/version.cpp
+    src/split.cpp
 )
 
 target_include_directories(common

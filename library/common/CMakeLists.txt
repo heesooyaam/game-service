@@ -1,6 +1,7 @@
 add_library(common
     src/version.cpp
     src/split.cpp
+    src/struct/error.cpp
 )
 
 target_include_directories(common

@@ -5,7 +5,7 @@
 
 namespace NEventLoop::NIO {
 
-    TFd::TFd(std::int32_t fd) noexcept 
+    TFd::TFd(int32_t fd) noexcept 
         : fd_(fd)
     {}
 
@@ -30,7 +30,7 @@ namespace NEventLoop::NIO {
         return *this;
     }
 
-    std::int32_t TFd::get() const noexcept {
+    int32_t TFd::get() const noexcept {
         return fd_;
     }
 

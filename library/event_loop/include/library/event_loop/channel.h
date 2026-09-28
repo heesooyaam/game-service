@@ -7,8 +7,8 @@ namespace NEventLoop {
 
     class TEventLoop;
 
-    enum class ERegistrationState : std::uint8_t {
-        UNREGISTERED = 0,
+    enum class ERegistrationState : uint8_t {
+        NOT_REGISTERED = 0,
         REGISTERED
     };
 
@@ -16,7 +16,7 @@ namespace NEventLoop {
     public:
         using TCallback = std::function<void()>;
 
-        TChannel(TEventLoop& event_loop, std::int32_t fd);
+        TChannel(TEventLoop& event_loop, int32_t fd);
         ~TChannel();
 
         TChannel(const TChannel&) = delete;
@@ -25,8 +25,8 @@ namespace NEventLoop {
         TChannel(TChannel&&) = delete;
         TChannel& operator=(TChannel&&) = delete;
 
-        std::int32_t fd() const noexcept;
-        std::uint32_t events() const noexcept;
+        int32_t fd() const noexcept;
+        uint32_t events() const noexcept;
 
         bool is_registered() const noexcept;
         bool is_reading() const noexcept;
@@ -49,7 +49,7 @@ namespace NEventLoop {
     private:
         friend class TEventLoop;
 
-        void handle_events(std::uint32_t received_events);
+        void handle_events(uint32_t received_events);
 
     private:
         TEventLoop& event_loop_;
@@ -59,10 +59,10 @@ namespace NEventLoop {
         TCallback error_callback_;
         TCallback close_callback_;
 
-        std::int32_t fd_ = -1;
-        std::uint32_t events_ = 0;
+        int32_t fd_ = -1;
+        uint32_t events_ = 0;
 
-        ERegistrationState registered_state_ = ERegistrationState::UNREGISTERED;
+        ERegistrationState registered_state_ = ERegistrationState::NOT_REGISTERED;
     };
 
 } // namespace NEventLoop

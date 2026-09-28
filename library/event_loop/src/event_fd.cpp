@@ -14,13 +14,13 @@ namespace NEventLoop::NIO {
         }
     }
 
-    std::int32_t TEventFd::fd() const noexcept {
+    int32_t TEventFd::fd() const noexcept {
         return fd_.get();
     }
 
     void TEventFd::notify() {
-        std::uint64_t value = 1;
-        std::int64_t result;
+        uint64_t value = 1;
+        int64_t result;
 
         do {
             result = ::write(
@@ -30,14 +30,14 @@ namespace NEventLoop::NIO {
             );
         } while (result == -1 && errno == EINTR);
 
-        if (result != static_cast<std::int64_t>(sizeof(value))) {
+        if (result != static_cast<int64_t>(sizeof(value))) {
             throw 1;
         }
     }
 
     void TEventFd::consume() {
-        std::uint64_t value = 0;
-        std::int64_t result;
+        uint64_t value = 0;
+        int64_t result;
 
         do {
             result = ::read(
@@ -47,7 +47,7 @@ namespace NEventLoop::NIO {
             );
         } while (result == -1 && errno == EINTR);
 
-        if (result != static_cast<std::int64_t>(sizeof(value))) {
+        if (result != static_cast<int64_t>(sizeof(value))) {
             throw 1;
         }
     }

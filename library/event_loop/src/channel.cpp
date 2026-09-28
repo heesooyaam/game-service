@@ -7,7 +7,7 @@
 
 namespace NEventLoop {
 
-    TChannel::TChannel(TEventLoop& event_loop, std::int32_t fd)
+    TChannel::TChannel(TEventLoop& event_loop, int32_t fd)
         : event_loop_(event_loop)
         , fd_(fd)
     {}
@@ -16,11 +16,11 @@ namespace NEventLoop {
         assert(!is_registered());
     }
 
-    std::int32_t TChannel::fd() const noexcept {
+    int32_t TChannel::fd() const noexcept {
         return fd_;
     }
 
-    std::uint32_t TChannel::events() const noexcept {
+    uint32_t TChannel::events() const noexcept {
         return events_;
     }
 
@@ -81,7 +81,7 @@ namespace NEventLoop {
         event_loop_.remove_channel(*this);
     }
     
-    void TChannel::handle_events(std::uint32_t received_events) {
+    void TChannel::handle_events(uint32_t received_events) {
         if ((received_events & EPOLLERR) != 0) {
             if (error_callback_) {
                 error_callback_();

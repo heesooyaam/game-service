@@ -10,7 +10,7 @@ namespace NEventLoop::NIO {
 
     struct TSocketAddress {
         std::string ip;
-        std::uint16_t port = 0;
+        uint16_t port = 0;
     };
 
     class TSocket {
@@ -24,15 +24,15 @@ namespace NEventLoop::NIO {
         TSocket(TSocket&&) noexcept = default;
         TSocket& operator=(TSocket&&) noexcept = default;
 
-        std::int32_t fd() const noexcept;
+        int32_t fd() const noexcept;
 
         void bind(const TSocketAddress& address);
         void listen();
 
         TSocket accept();
 
-        std::ptrdiff_t recv(void* buffer, std::size_t size);
-        std::ptrdiff_t send(const void* buffer, std::size_t size);
+        ptrdiff_t recv(void* buffer, size_t size);
+        ptrdiff_t send(const void* buffer, size_t size);
 
         void shutdown();
 

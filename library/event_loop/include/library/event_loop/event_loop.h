@@ -45,7 +45,7 @@ namespace NEventLoop {
         NIO::TEpoller poller_;
         NIO::TEventFd notifier_;
 
-        std::unordered_map<std::int32_t, TChannel*> channels_;
+        std::unordered_map<int32_t, TChannel*> channels_;
 
         std::unique_ptr<TChannel> notify_channel_;
 

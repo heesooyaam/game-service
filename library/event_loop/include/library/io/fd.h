@@ -7,7 +7,7 @@ namespace NEventLoop::NIO {
     //owns fd in class
     class TFd {
     public:
-        explicit TFd(std::int32_t fd) noexcept;
+        explicit TFd(int32_t fd) noexcept;
         ~TFd();
 
         TFd(const TFd&) = delete;
@@ -16,7 +16,7 @@ namespace NEventLoop::NIO {
         TFd(TFd&& other) noexcept;
         TFd& operator=(TFd&& other) noexcept;
 
-        std::int32_t get() const noexcept;
+        int32_t get() const noexcept;
         bool valid() const noexcept;
 
         void close() noexcept;
@@ -24,7 +24,7 @@ namespace NEventLoop::NIO {
         void reset() noexcept;
         
     private:
-        std::int32_t fd_ = -1;
+        int32_t fd_ = -1;
     };
 
 } // namespace NEventLoop::NIO

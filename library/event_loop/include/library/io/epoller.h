@@ -14,8 +14,8 @@ namespace NEventLoop {
 namespace NEventLoop::NIO {
 
     struct TEvent {
-        std::int32_t fd = -1;
-        std::uint32_t events = 0;
+        int32_t fd = -1;
+        uint32_t events = 0;
     };
 
     class TEpoller {
@@ -36,7 +36,7 @@ namespace NEventLoop::NIO {
         std::vector<TEvent> wait();
 
     private:
-        static constexpr std::size_t MAX_EVENTS = 64;
+        static constexpr size_t MAX_EVENTS = 64;
         TFd epoll_fd_;
     };
     

@@ -25,7 +25,7 @@ namespace NEventLoop {
         assert(channels_.size() == 1);
         assert(channels_.contains(notifier_.fd()));
 
-        notify_channel_->registered_state_ = ERegistrationState::UNREGISTERED;
+        notify_channel_->registered_state_ = ERegistrationState::NOT_REGISTERED;
         notify_channel_.reset();
     }
 
@@ -33,16 +33,15 @@ namespace NEventLoop {
         running_ = true;
 
         while (running_) {
-            auto events = poller_.wait();
-
-            for (const auto& event : events) {
-                const auto it = channels_.find(event.fd);
+            auto all_events = poller_.wait();
+            for (const auto& [fd, events] : all_events) {
+                const auto it = channels_.find(fd);
 
                 if (it == channels_.end()) {
                     continue;
                 }
 
-                it->second->handle_events(event.events);
+                it->second->handle_events(events);
             }
 
             process_pending_tasks();
@@ -67,7 +66,7 @@ namespace NEventLoop {
         if (channel.events() == 0) {
             if (channel.is_registered()) {
                 poller_.remove(channel);
-                channel.registered_state_ = ERegistrationState::UNREGISTERED;
+                channel.registered_state_ = ERegistrationState::NOT_REGISTERED;
                 channels_.erase(channel.fd());
             }
             return;
@@ -89,7 +88,7 @@ namespace NEventLoop {
         }
 
         channels_.erase(channel.fd());
-        channel.registered_state_ = ERegistrationState::UNREGISTERED;
+        channel.registered_state_ = ERegistrationState::NOT_REGISTERED;
     }
 
     void TEventLoop::process_pending_tasks() {

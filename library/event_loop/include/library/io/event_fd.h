@@ -17,7 +17,7 @@ namespace NEventLoop::NIO {
         TEventFd(TEventFd&&) noexcept = default;
         TEventFd& operator=(TEventFd&&) noexcept = default;
 
-        std::int32_t fd() const noexcept;
+        int32_t fd() const noexcept;
 
         void notify();
         void consume();

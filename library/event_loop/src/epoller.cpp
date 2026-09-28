@@ -23,12 +23,14 @@ namespace NEventLoop::NIO {
         event.events = channel.events();
         event.data.fd = channel.fd();
 
-        if (::epoll_ctl(
+        if (
+            ::epoll_ctl(
                 epoll_fd_.get(),
                 EPOLL_CTL_ADD,
                 channel.fd(),
                 &event
-            ) == -1) {
+            ) == -1
+        ) {
             throw 1;
         }
     }
@@ -40,12 +42,14 @@ namespace NEventLoop::NIO {
         event.events = channel.events();
         event.data.fd = channel.fd();
 
-        if (::epoll_ctl(
+        if (
+            ::epoll_ctl(
                 epoll_fd_.get(),
                 EPOLL_CTL_MOD,
                 channel.fd(),
                 &event
-            ) == -1) {
+            ) == -1
+        ) {
             throw 1;
         }
     }
@@ -53,25 +57,27 @@ namespace NEventLoop::NIO {
     void TEpoller::remove(const TChannel& channel) {
         assert(channel.is_registered());
 
-        if (::epoll_ctl(
+        if (
+            ::epoll_ctl(
                 epoll_fd_.get(),
                 EPOLL_CTL_DEL,
                 channel.fd(),
                 nullptr
-            ) == -1) {
+            ) == -1
+        ) {
             throw 1;
         }
     }
 
     std::vector<TEvent> TEpoller::wait() {
         std::array<epoll_event, MAX_EVENTS> events{};
-        std::int32_t count = 0;
+        int32_t count = 0;
 
         do {
             count = ::epoll_wait(
                 epoll_fd_.get(),
                 events.data(),
-                static_cast<std::int32_t>(events.size()),
+                static_cast<int32_t>(events.size()),
                 -1
             );
         } while (count == -1 && errno == EINTR);
@@ -83,11 +89,11 @@ namespace NEventLoop::NIO {
         std::vector<TEvent> result;
         result.reserve(count);
 
-        for (std::int32_t i = 0; i < count; ++i) {
-            result.push_back({
-                events[i].data.fd,
-                events[i].events
-            });
+        for (int32_t i = 0; i < count; ++i) {
+            result.emplace_back(
+                static_cast<int>(events[i].data.fd),
+                static_cast<uint32_t>(events[i].events)
+            );
         }
 
         return result;

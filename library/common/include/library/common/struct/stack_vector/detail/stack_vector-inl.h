@@ -65,7 +65,7 @@ namespace NCommon::NStruct {
     template<bool IsConst>
     typename TStackVector<T, Capacity>::template TBasicIterator<IsConst>&
     TStackVector<T, Capacity>::TBasicIterator<IsConst>::operator++() noexcept {
-        ++ptr_;
+        move_forward();
         return *this;
     }
 
@@ -74,7 +74,7 @@ namespace NCommon::NStruct {
     typename TStackVector<T, Capacity>::template TBasicIterator<IsConst>
     TStackVector<T, Capacity>::TBasicIterator<IsConst>::operator++(int) noexcept {
         auto iterator_copy = *this;
-        ++ptr_;
+        move_forward();
         return iterator_copy;
     }
 
@@ -82,7 +82,7 @@ namespace NCommon::NStruct {
     template<bool IsConst>
     typename TStackVector<T, Capacity>::template TBasicIterator<IsConst>&
     TStackVector<T, Capacity>::TBasicIterator<IsConst>::operator--() noexcept {
-        --ptr_;
+        move_backward();
         return *this;
     }
 
@@ -91,7 +91,7 @@ namespace NCommon::NStruct {
     typename TStackVector<T, Capacity>::template TBasicIterator<IsConst>
     TStackVector<T, Capacity>::TBasicIterator<IsConst>::operator--(int) noexcept {
         auto iterator_copy = *this;
-        --ptr_;
+        move_backward();
         return iterator_copy;
     }
 
@@ -101,7 +101,7 @@ namespace NCommon::NStruct {
     TStackVector<T, Capacity>::TBasicIterator<IsConst>::operator+=(
         difference_type delta
     ) noexcept {
-        ptr_ += delta;
+        move(delta);
         return *this;
     }
 
@@ -111,7 +111,7 @@ namespace NCommon::NStruct {
     TStackVector<T, Capacity>::TBasicIterator<IsConst>::operator-=(
         difference_type delta
     ) noexcept {
-        ptr_ -= delta;
+        move(-delta);
         return *this;
     }
 
@@ -139,7 +139,7 @@ namespace NCommon::NStruct {
     bool TStackVector<T, Capacity>::TBasicIterator<IsConst>::operator==(
         const TBasicIterator<OtherConst>& other
     ) const noexcept {
-        return ptr_ == other.ptr_;
+        return (*this <=> other) == 0;
     }
 
     template<typename T, size_t Capacity>
@@ -148,7 +148,7 @@ namespace NCommon::NStruct {
     bool TStackVector<T, Capacity>::TBasicIterator<IsConst>::operator!=(
         const TBasicIterator<OtherConst>& other
     ) const noexcept {
-        return ptr_ != other.ptr_;
+        return (*this <=> other) != 0;
     }
 
     template<typename T, size_t Capacity>
@@ -157,7 +157,7 @@ namespace NCommon::NStruct {
     bool TStackVector<T, Capacity>::TBasicIterator<IsConst>::operator<(
         const TBasicIterator<OtherConst>& other
     ) const noexcept {
-        return ptr_ < other.ptr_;
+        return (*this <=> other) < 0;
     }
 
     template<typename T, size_t Capacity>
@@ -166,7 +166,7 @@ namespace NCommon::NStruct {
     bool TStackVector<T, Capacity>::TBasicIterator<IsConst>::operator>(
         const TBasicIterator<OtherConst>& other
     ) const noexcept {
-        return ptr_ > other.ptr_;
+        return (*this <=> other) > 0;
     }
 
     template<typename T, size_t Capacity>
@@ -175,7 +175,7 @@ namespace NCommon::NStruct {
     bool TStackVector<T, Capacity>::TBasicIterator<IsConst>::operator<=(
         const TBasicIterator<OtherConst>& other
     ) const noexcept {
-        return ptr_ <= other.ptr_;
+        return (*this <=> other) <= 0;
     }
 
     template<typename T, size_t Capacity>
@@ -184,8 +184,17 @@ namespace NCommon::NStruct {
     bool TStackVector<T, Capacity>::TBasicIterator<IsConst>::operator>=(
         const TBasicIterator<OtherConst>& other
     ) const noexcept {
-        return ptr_ >= other.ptr_;
+        return (*this <=> other) >= 0;
     }
+
+    template<typename T, size_t Capacity>
+    template<bool IsConst>
+    template<bool OtherConst>
+    std::strong_ordering TStackVector<T, Capacity>::TBasicIterator<IsConst>::operator<=>(
+        const TBasicIterator<OtherConst>& other
+    ) const noexcept {
+        return ptr_ <=> other.ptr_;
+    }    
 
     template<typename T, size_t Capacity>
     template<bool IsConst>
@@ -198,9 +207,27 @@ namespace NCommon::NStruct {
     }
 
     template<typename T, size_t Capacity>
+    template<bool IsConst>
+    void TStackVector<T, Capacity>::TBasicIterator<IsConst>::move_forward() noexcept {
+        ++ptr_;
+    }
+
+    template<typename T, size_t Capacity>
+    template<bool IsConst>
+    void TStackVector<T, Capacity>::TBasicIterator<IsConst>::move_backward() noexcept {
+        --ptr_;
+    }
+
+    template<typename T, size_t Capacity>
+    template<bool IsConst>
+    void TStackVector<T, Capacity>::TBasicIterator<IsConst>::move(difference_type delta) noexcept {
+        ptr_ += delta;
+    }
+
+    template<typename T, size_t Capacity>
     TStackVector<T, Capacity>::TStackVector(
         std::initializer_list<T> init
-    ) {
+    ) requires std::is_copy_constructible_v<T> {
         if (init.size() > Capacity) {
             throw NError::TStackVectorCapacityExceeded(Capacity);
         }
@@ -218,7 +245,7 @@ namespace NCommon::NStruct {
     template<typename T, size_t Capacity>
     TStackVector<T, Capacity>::TStackVector(
         const TStackVector& other
-    ) {
+    ) requires std::is_copy_constructible_v<T> {
         try {
             for (size_t i = 0; i < other.size_; ++i) {
                 push_back(other[i]);
@@ -232,7 +259,8 @@ namespace NCommon::NStruct {
     template<typename T, size_t Capacity>
     TStackVector<T, Capacity>::TStackVector(
         TStackVector&& other
-    ) noexcept(std::is_nothrow_move_constructible_v<T>) {
+    ) noexcept(std::is_nothrow_move_constructible_v<T>)
+        requires std::is_move_constructible_v<T> {
         if constexpr (std::is_nothrow_move_constructible_v<T>) {
             for (size_t i = 0; i < other.size_; ++i) {
                 push_back(std::move(other[i]));
@@ -255,7 +283,7 @@ namespace NCommon::NStruct {
     TStackVector<T, Capacity>&
     TStackVector<T, Capacity>::operator=(
         const TStackVector& other
-    ) {
+    ) requires std::is_copy_constructible_v<T> {
         if (this == std::addressof(other)) {
             return *this;
         }
@@ -278,7 +306,8 @@ namespace NCommon::NStruct {
     TStackVector<T, Capacity>&
     TStackVector<T, Capacity>::operator=(
         TStackVector&& other
-    ) noexcept(std::is_nothrow_move_constructible_v<T>) {
+    ) noexcept(std::is_nothrow_move_constructible_v<T>) 
+        requires std::is_move_constructible_v<T> {
         if (this == std::addressof(other)) {
             return *this;
         }
@@ -311,14 +340,12 @@ namespace NCommon::NStruct {
     }
 
     template<typename T, size_t Capacity>
-    typename TStackVector<T, Capacity>::TSize
-    TStackVector<T, Capacity>::size() const noexcept {
+    size_t TStackVector<T, Capacity>::size() const noexcept {
         return size_;
     }
 
     template<typename T, size_t Capacity>
-    constexpr typename TStackVector<T, Capacity>::TSize
-    TStackVector<T, Capacity>::capacity() noexcept {
+    constexpr size_t TStackVector<T, Capacity>::capacity() noexcept {
         return Capacity;
     }
 
@@ -329,21 +356,21 @@ namespace NCommon::NStruct {
 
     template<typename T, size_t Capacity>
     T& TStackVector<T, Capacity>::operator[](
-        TSize index
+        size_t index
     ) noexcept {
         return data()[index];
     }
 
     template<typename T, size_t Capacity>
     const T& TStackVector<T, Capacity>::operator[](
-        TSize index
+        size_t index
     ) const noexcept {
         return data()[index];
     }
 
     template<typename T, size_t Capacity>
     T& TStackVector<T, Capacity>::at(
-        TSize index
+        size_t index
     ) {
         if (index >= size_) {
             throw std::out_of_range(
@@ -360,7 +387,7 @@ namespace NCommon::NStruct {
 
     template<typename T, size_t Capacity>
     const T& TStackVector<T, Capacity>::at(
-        TSize index
+        size_t index
     ) const {
         if (index >= size_) {
             throw std::out_of_range(
@@ -406,6 +433,22 @@ namespace NCommon::NStruct {
     }
 
     template<typename T, size_t Capacity>
+    void TStackVector<T, Capacity>::unchecked_push_back(
+        const T& value
+    ) {
+        std::construct_at(data() + size_, value);
+        ++size_;
+    }
+
+    template<typename T, size_t Capacity>
+    void TStackVector<T, Capacity>::unchecked_push_back(
+        T&& value
+    ) {
+        std::construct_at(data() + size_, std::move(value));
+        ++size_;
+    }
+
+    template<typename T, size_t Capacity>
     void TStackVector<T, Capacity>::push_back(
         const T& value
     ) {
@@ -413,10 +456,7 @@ namespace NCommon::NStruct {
             throw NError::TStackVectorCapacityExceeded(Capacity);
         }
 
-        void* place = storage_.data() + sizeof(T) * size_;
-
-        new (place) T(value);
-        ++size_;
+        unchecked_push_back(value);
     }
 
     template<typename T, size_t Capacity>
@@ -427,10 +467,7 @@ namespace NCommon::NStruct {
             throw NError::TStackVectorCapacityExceeded(Capacity);
         }
 
-        void* place = storage_.data() + sizeof(T) * size_;
-
-        new (place) T(std::move(value));
-        ++size_;
+        unchecked_push_back(std::move(value));
     }
 
     template<typename T, size_t Capacity>
@@ -442,11 +479,8 @@ namespace NCommon::NStruct {
             throw NError::TStackVectorCapacityExceeded(Capacity);
         }
 
-        void* place = storage_.data() + sizeof(T) * size_;
-
-        T* object = new (place) T(std::forward<Args>(args)...);
+        T* object = std::construct_at(data() + size_, std::forward<Args>(args)...);
         ++size_;
-
         return *object;
     }
 

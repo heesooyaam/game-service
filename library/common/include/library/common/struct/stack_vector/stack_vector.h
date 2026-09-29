@@ -10,15 +10,11 @@ namespace NCommon::NStruct {
 
     template<typename T, size_t Capacity>
     class TStackVector {
-    public:
+
         static_assert(
             Capacity > 0, 
             "TStackVector Capacity must be greater than zero"
         );
-
-        using TValue = T;
-        using TSize = size_t;
-        using TDifference = ptrdiff_t;
 
     private:
 
@@ -27,7 +23,7 @@ namespace NCommon::NStruct {
         public:
             using iterator_category = std::random_access_iterator_tag;
             using value_type = T;
-            using difference_type = std::ptrdiff_t;
+            using difference_type = ptrdiff_t;
 
             using pointer = std::conditional_t<IsConst, const T*, T*>;
             using reference = std::conditional_t<IsConst, const T&, T&>;
@@ -88,8 +84,21 @@ namespace NCommon::NStruct {
             bool operator>=(const TBasicIterator<OtherConst>& other) const noexcept;
 
             template<bool OtherConst>
+            std::strong_ordering operator<=>(const TBasicIterator<OtherConst>& other) const noexcept;
+
+            template<bool OtherConst>
             difference_type operator-(const TBasicIterator<OtherConst>& other) const noexcept;
 
+            friend TBasicIterator operator+(difference_type delta, const TBasicIterator& it) noexcept {
+                return it + delta;
+            }
+
+        private:
+            void move_forward() noexcept;
+            void move_backward() noexcept;
+
+            void move(difference_type delta) noexcept;
+            
         private:
             template<bool>
             friend class TBasicIterator;
@@ -107,29 +116,31 @@ namespace NCommon::NStruct {
     public:
 
         TStackVector() = default;
-        TStackVector(std::initializer_list<T> init);
+        TStackVector(std::initializer_list<T> init) requires std::is_copy_constructible_v<T>;
 
-        TStackVector(const TStackVector& other);
+        TStackVector(const TStackVector& other) requires std::is_copy_constructible_v<T>;
 
         TStackVector(TStackVector&& other)
-            noexcept(std::is_nothrow_move_constructible_v<T>);
+            noexcept(std::is_nothrow_move_constructible_v<T>) 
+            requires std::is_move_constructible_v<T>;
 
-        TStackVector& operator=(const TStackVector& other);
+        TStackVector& operator=(const TStackVector& other) requires std::is_copy_constructible_v<T>;
 
         TStackVector& operator=(TStackVector&& other)
-            noexcept(std::is_nothrow_move_constructible_v<T>);
+            noexcept(std::is_nothrow_move_constructible_v<T>) 
+            requires std::is_move_constructible_v<T>;
 
         ~TStackVector();
 
-        TSize size() const noexcept;
-        static constexpr TSize capacity() noexcept;
+        size_t size() const noexcept;
+        static constexpr size_t capacity() noexcept;
         bool empty() const noexcept;
 
-        T& operator[](TSize index) noexcept;
-        const T& operator[](TSize index) const noexcept;
+        T& operator[](size_t index) noexcept;
+        const T& operator[](size_t index) const noexcept;
 
-        T& at(TSize index);
-        const T& at(TSize index) const;
+        T& at(size_t index);
+        const T& at(size_t index) const;
 
         T& front() noexcept;
         const T& front() const noexcept;
@@ -139,6 +150,9 @@ namespace NCommon::NStruct {
 
         T* data() noexcept;
         const T* data() const noexcept;
+
+        void unchecked_push_back(const T& value);
+        void unchecked_push_back(T&& value);
 
         void push_back(const T& value);
         void push_back(T&& value);
@@ -167,7 +181,7 @@ namespace NCommon::NStruct {
 
     private:
         alignas(T) std::array<std::byte, sizeof(T) * Capacity> storage_;        
-        TSize size_ = 0;
+        size_t size_ = 0;
     };
 
 } // namespace NCommon::NStruct

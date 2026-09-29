@@ -160,6 +160,18 @@ namespace NCommon::NStruct::NTests {
         CHECK(vector.data() == &vector[0]);
         CHECK_EQ(vector.data()[1], 20);
         CHECK_EQ(&vector[1] - &vector[0], 1);
+
+        TStackVector<int, 4> vector2;
+        vector2.unchecked_push_back(10); 
+        vector2.unchecked_push_back(20);
+
+        CHECK_EQ(vector2.size(), 2);
+        CHECK_EQ(vector2[0], 10);
+        CHECK_EQ(vector2[1], 20);
+
+        CHECK(vector2.data() == &vector2[0]);
+        CHECK_EQ(vector2.data()[1], 20);
+        CHECK_EQ(&vector2[1] - &vector2[0], 1);
     }
 
     TEST_CASE(test_emplace_back) {
@@ -378,6 +390,8 @@ namespace NCommon::NStruct::NTests {
         auto begin = vector.begin();
         auto end = vector.end();
 
+        CHECK_EQ(1 + begin, begin + 1);
+
         CHECK_EQ(*begin, 10);
         CHECK_EQ(begin[1], 20);
         CHECK_EQ(*(begin + 2), 30);
@@ -387,8 +401,10 @@ namespace NCommon::NStruct::NTests {
 
         CHECK(begin < end);
         CHECK(begin <= end);
+        CHECK((begin <=> end) <= 0);
         CHECK(end > begin);
         CHECK(end >= begin);
+        CHECK((end <=> begin) >= 0);
         CHECK(begin != end);
 
         ++begin;

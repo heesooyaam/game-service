@@ -44,7 +44,7 @@ namespace NTesting {
             return EXIT_FAILURE;
         }
 
-        std::size_t failed = 0;
+        size_t failed = 0;
         for (const auto& test_case : cases) {
             try {
                 test_case.function();

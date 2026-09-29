@@ -6,7 +6,6 @@
 
 #include <cctype>
 #include <cstdlib>
-#include <iostream>
 #include <limits>
 #include <string_view>
 
@@ -25,7 +24,7 @@ namespace NJson::NTests {
         // 2. Тесты для CJsonInteger
         STATIC_CHECK(CJsonInteger<int>);
         STATIC_CHECK(CJsonInteger<long long>);
-        STATIC_CHECK(CJsonInteger<std::uint64_t>);
+        STATIC_CHECK(CJsonInteger<uint64_t>);
         STATIC_CHECK(CJsonInteger<short>);
         STATIC_CHECK(CJsonInteger<const int&>);
         STATIC_CHECK(!CJsonInteger<bool>);
@@ -482,7 +481,7 @@ namespace NJson::NTests {
         // 1. Integer overflow test
         thrown = false;
         try {
-            TJsonValue val = std::numeric_limits<std::uint64_t>::max();
+            TJsonValue val = std::numeric_limits<uint64_t>::max();
         } catch (const NError::TJsonIntegerOutOfRange&) {
             thrown = true;
         }
@@ -524,7 +523,7 @@ namespace NJson::NTests {
         TJsonValue assign_val;
 
         thrown = false;
-        try { assign_val = std::numeric_limits<std::uint64_t>::max(); }
+        try { assign_val = std::numeric_limits<uint64_t>::max(); }
         catch (const NError::TJsonIntegerOutOfRange&) { thrown = true; }
         CHECK(thrown);
 

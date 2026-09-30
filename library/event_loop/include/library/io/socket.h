@@ -31,8 +31,13 @@ namespace NEventLoop::NIO {
 
         TSocket accept();
 
+<<<<<<< HEAD
         ptrdiff_t recv(void* buffer, size_t size);
         ptrdiff_t send(const void* buffer, size_t size);
+=======
+        ssize_t recv(void* buffer, size_t size);
+        ssize_t send(const void* buffer, size_t size);
+>>>>>>> 193c91e (better)
 
         void shutdown();
 

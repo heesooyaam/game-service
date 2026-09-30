@@ -1,9 +1,10 @@
 #pragma once
 
+#include <library/common/struct/stack_vector/stack_vector.h>
+
 #include <library/io/fd.h>
 
 #include <cstdint>
-#include <vector>
 
 namespace NEventLoop {
     
@@ -19,6 +20,10 @@ namespace NEventLoop::NIO {
     };
 
     class TEpoller {
+    private:
+        static constexpr size_t MAX_EVENTS = 64;
+        TFd epoll_fd_;
+        
     public:
         TEpoller();
         ~TEpoller() = default;
@@ -33,11 +38,14 @@ namespace NEventLoop::NIO {
         void modify(const TChannel& channel);
         void remove(const TChannel& channel);
 
-        std::vector<TEvent> wait();
+        NCommon::NStruct::TStackVector<TEvent, MAX_EVENTS> wait();
 
+<<<<<<< HEAD
     private:
         static constexpr size_t MAX_EVENTS = 64;
         TFd epoll_fd_;
+=======
+>>>>>>> 193c91e (better)
     };
     
 } // namespace NEventLoop::NIO

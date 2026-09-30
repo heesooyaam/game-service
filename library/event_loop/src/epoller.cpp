@@ -1,3 +1,5 @@
+#include <library/common/struct/stack_vector/stack_vector.h>
+
 #include <library/event_loop/channel.h>
 #include <library/io/epoller.h>
 
@@ -69,7 +71,7 @@ namespace NEventLoop::NIO {
         }
     }
 
-    std::vector<TEvent> TEpoller::wait() {
+    NCommon::NStruct::TStackVector<TEvent, TEpoller::MAX_EVENTS> TEpoller::wait() {
         std::array<epoll_event, MAX_EVENTS> events{};
         int32_t count = 0;
 
@@ -86,12 +88,15 @@ namespace NEventLoop::NIO {
             throw 1;
         }
 
-        std::vector<TEvent> result;
-        result.reserve(count);
+        NCommon::NStruct::TStackVector<TEvent, MAX_EVENTS> result;
 
         for (int32_t i = 0; i < count; ++i) {
             result.emplace_back(
+<<<<<<< HEAD
                 static_cast<int>(events[i].data.fd),
+=======
+                static_cast<int32_t>(events[i].data.fd),
+>>>>>>> 193c91e (better)
                 static_cast<uint32_t>(events[i].events)
             );
         }

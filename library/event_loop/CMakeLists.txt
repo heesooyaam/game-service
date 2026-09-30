@@ -12,3 +12,8 @@ target_include_directories(event_loop
      PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+
+target_link_libraries(event_loop
+    PUBLIC
+        common
+)

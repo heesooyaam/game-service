@@ -92,11 +92,7 @@ namespace NEventLoop::NIO {
 
         for (int32_t i = 0; i < count; ++i) {
             result.emplace_back(
-<<<<<<< HEAD
-                static_cast<int>(events[i].data.fd),
-=======
                 static_cast<int32_t>(events[i].data.fd),
->>>>>>> 193c91e (better)
                 static_cast<uint32_t>(events[i].events)
             );
         }

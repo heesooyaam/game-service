@@ -40,12 +40,6 @@ namespace NEventLoop::NIO {
 
         NCommon::NStruct::TStackVector<TEvent, MAX_EVENTS> wait();
 
-<<<<<<< HEAD
-    private:
-        static constexpr size_t MAX_EVENTS = 64;
-        TFd epoll_fd_;
-=======
->>>>>>> 193c91e (better)
     };
     
 } // namespace NEventLoop::NIO

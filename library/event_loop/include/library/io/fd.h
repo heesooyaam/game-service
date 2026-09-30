@@ -4,17 +4,16 @@
 
 namespace NEventLoop::NIO {
 
-    //owns fd in class
-    class TFd {
+    class TFdWrapper {
     public:
-        explicit TFd(int32_t fd) noexcept;
-        ~TFd();
+        explicit TFdWrapper(int32_t fd) noexcept;
+        ~TFdWrapper();
 
-        TFd(const TFd&) = delete;
-        TFd& operator=(const TFd&) = delete;
+        TFdWrapper(const TFdWrapper&) = delete;
+        TFdWrapper& operator=(const TFdWrapper&) = delete;
 
-        TFd(TFd&& other) noexcept;
-        TFd& operator=(TFd&& other) noexcept;
+        TFdWrapper(TFdWrapper&& other) noexcept;
+        TFdWrapper& operator=(TFdWrapper&& other) noexcept;
 
         int32_t get() const noexcept;
         bool valid() const noexcept;

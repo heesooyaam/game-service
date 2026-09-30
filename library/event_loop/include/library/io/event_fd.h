@@ -6,24 +6,24 @@
 
 namespace NEventLoop::NIO {
 
-    class TEventFd {
+    class TEvenTFdWrapper {
     public:
-        TEventFd();
-        ~TEventFd() = default;
+        TEvenTFdWrapper();
+        ~TEvenTFdWrapper() = default;
 
-        TEventFd(const TEventFd&) = delete;
-        TEventFd& operator=(const TEventFd&) = delete;
+        TEvenTFdWrapper(const TEvenTFdWrapper&) = delete;
+        TEvenTFdWrapper& operator=(const TEvenTFdWrapper&) = delete;
 
-        TEventFd(TEventFd&&) noexcept = default;
-        TEventFd& operator=(TEventFd&&) noexcept = default;
+        TEvenTFdWrapper(TEvenTFdWrapper&&) noexcept = default;
+        TEvenTFdWrapper& operator=(TEvenTFdWrapper&&) noexcept = default;
 
         int32_t fd() const noexcept;
 
-        void notify();
-        void consume();
+        void notify() noexcept;
+        void consume() noexcept;
 
     private:
-        TFd fd_;
+        TFdWrapper fd_;
     };
 
 } // namespace NEventLoop::NIO

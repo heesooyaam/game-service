@@ -4,8 +4,8 @@ add_library(event_loop
     src/event_fd.cpp
     src/event_loop.cpp
     src/fd.cpp
-    src/socket.cpp
-
+    src/error_io.cpp
+    src/error_event_loop.cpp
 )
 
 target_include_directories(event_loop
@@ -17,3 +17,5 @@ target_link_libraries(event_loop
     PUBLIC
         common
 )
+
+add_subdirectory(tests/ut)

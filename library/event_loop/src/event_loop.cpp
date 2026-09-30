@@ -1,8 +1,27 @@
-#include <library/event_loop/event_loop.h>
 #include <library/event_loop/channel.h>
+#include <library/event_loop/event_loop.h>
+#include <library/event_loop/error_event_loop.h>
 
 #include <cassert>
 #include <mutex>
+
+namespace {
+
+    class TRunningGuard {
+    public:
+        explicit TRunningGuard(std::atomic_bool& running)
+            : running_(running)
+        {}
+
+        ~TRunningGuard() {
+            running_ = false;
+        }
+
+    private:
+        std::atomic_bool& running_;
+    };
+
+}
 
 namespace NEventLoop {
 
@@ -31,6 +50,8 @@ namespace NEventLoop {
 
     void TEventLoop::run() {
         running_ = true;
+        TRunningGuard guard(running_);
+
         while (running_) {
             auto all_events = poller_.wait();
             for (const auto& [fd, events] : all_events) {
@@ -39,7 +60,7 @@ namespace NEventLoop {
                     continue;
                 }
 
-                it->second->handle_events(events);
+                it->second.get().handle_events(events);
             }
 
             process_pending_tasks();
@@ -60,23 +81,62 @@ namespace NEventLoop {
         notifier_.notify();
     }
 
-    void TEventLoop::update_channel(TChannel& channel) {
+    void TEventLoop::update_channel(TChannel& channel, uint32_t prev_events) {
         if (channel.events() == 0) {
             if (channel.is_registered()) {
-                poller_.remove(channel);
-                channel.registered_state_ = ERegistrationState::NOT_REGISTERED;
+                try {
+                    poller_.remove(channel);
+                } catch (const NError::TEpollRemoveError&) {
+                    channel.events_ = prev_events;
+                    throw;
+                } catch (...) {
+                    assert(false);
+                }
+
                 channels_.erase(channel.fd());
+                channel.registered_state_ = ERegistrationState::NOT_REGISTERED;
             }
+
             return;
         }
 
         if (!channel.is_registered()) {
-            poller_.add(channel);
-            channel.registered_state_ = ERegistrationState::REGISTERED;
-            auto [it, inserted] = channels_.emplace(channel.fd(), std::addressof(channel));
-            assert(inserted);
+            try {
+                assert(channel.fd() != -1);
+
+                auto [it, inserted] = channels_.emplace(
+                    channel.fd(),
+                    std::ref(channel)
+                );
+
+                assert(inserted);
+
+                try {
+                    poller_.add(channel);
+                } catch (const NError::TEpollAddError&) {
+                    channels_.erase(it);
+                    channel.events_ = prev_events;
+                    throw;
+                } catch (...) {
+                    assert(false);
+                }
+
+                channel.registered_state_ = ERegistrationState::REGISTERED;
+            } catch (const std::bad_alloc&) {
+                channel.events_ = prev_events;
+                throw;
+            }
+            
         } else {
-            poller_.modify(channel);
+
+            try {
+                poller_.modify(channel);
+            } catch(const NError::TEpollModifyError&) {
+                channel.events_ = prev_events;
+                throw;
+            } catch(...) {
+                assert(false);
+            }
         }
     }
 

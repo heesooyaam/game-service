@@ -1,6 +1,7 @@
 #include <library/common/struct/stack_vector/stack_vector.h>
 
 #include <library/event_loop/channel.h>
+#include <library/event_loop/error_event_loop.h>
 #include <library/io/epoller.h>
 
 #include <array>
@@ -14,7 +15,7 @@ namespace NEventLoop::NIO {
         : epoll_fd_(::epoll_create1(EPOLL_CLOEXEC))
     {
         if (!epoll_fd_.valid()) {
-            throw 1;
+            throw NError::TEpollCreateError();
         }
     }
 
@@ -33,7 +34,7 @@ namespace NEventLoop::NIO {
                 &event
             ) == -1
         ) {
-            throw 1;
+            throw NError::TEpollAddError();
         }
     }
 
@@ -52,7 +53,7 @@ namespace NEventLoop::NIO {
                 &event
             ) == -1
         ) {
-            throw 1;
+            throw NError::TEpollModifyError();
         }
     }
 
@@ -67,7 +68,7 @@ namespace NEventLoop::NIO {
                 nullptr
             ) == -1
         ) {
-            throw 1;
+            throw NError::TEpollRemoveError();
         }
     }
 
@@ -85,7 +86,7 @@ namespace NEventLoop::NIO {
         } while (count == -1 && errno == EINTR);
 
         if (count == -1) {
-            throw 1;
+            throw NError::TEpollWaitEventError(errno);
         }
 
         NCommon::NStruct::TStackVector<TEvent, MAX_EVENTS> result;

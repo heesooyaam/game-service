@@ -1,24 +1,26 @@
+#include <library/io/error_io.h>
 #include <library/io/event_fd.h>
 
 #include <cerrno>
+#include <exception>
 #include <unistd.h>
 #include <sys/eventfd.h>
 
 namespace NEventLoop::NIO {
 
-    TEventFd::TEventFd()
+    TEvenTFdWrapper::TEvenTFdWrapper()
         : fd_(::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC))
     {
         if (!fd_.valid()) {
-            throw 1;
+            throw NError::TEventFdCreateError();
         }
     }
 
-    int32_t TEventFd::fd() const noexcept {
+    int32_t TEvenTFdWrapper::fd() const noexcept {
         return fd_.get();
     }
 
-    void TEventFd::notify() {
+    void TEvenTFdWrapper::notify() noexcept {
         uint64_t value = 1;
         int64_t result;
 
@@ -31,11 +33,11 @@ namespace NEventLoop::NIO {
         } while (result == -1 && errno == EINTR);
 
         if (result != static_cast<int64_t>(sizeof(value))) {
-            throw 1;
+            std::terminate();
         }
     }
 
-    void TEventFd::consume() {
+    void TEvenTFdWrapper::consume() noexcept {
         uint64_t value = 0;
         int64_t result;
 
@@ -48,7 +50,7 @@ namespace NEventLoop::NIO {
         } while (result == -1 && errno == EINTR);
 
         if (result != static_cast<int64_t>(sizeof(value))) {
-            throw 1;
+            std::terminate();
         }
     }
 

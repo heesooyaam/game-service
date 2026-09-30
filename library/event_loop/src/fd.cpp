@@ -5,21 +5,21 @@
 
 namespace NEventLoop::NIO {
 
-    TFd::TFd(int32_t fd) noexcept 
+    TFdWrapper::TFdWrapper(int32_t fd) noexcept 
         : fd_(fd)
     {}
 
-    TFd::~TFd() {
+    TFdWrapper::~TFdWrapper() {
         close();
     }
 
-    TFd::TFd(TFd&& other) noexcept
+    TFdWrapper::TFdWrapper(TFdWrapper&& other) noexcept
         : fd_(other.fd_)
     {
         other.reset();
     }
 
-    TFd& TFd::operator=(TFd&& other) noexcept {
+    TFdWrapper& TFdWrapper::operator=(TFdWrapper&& other) noexcept {
         if (this == std::addressof(other)) {
             return *this;
         }
@@ -30,22 +30,22 @@ namespace NEventLoop::NIO {
         return *this;
     }
 
-    int32_t TFd::get() const noexcept {
+    int32_t TFdWrapper::get() const noexcept {
         return fd_;
     }
 
-    bool TFd::valid() const noexcept {
+    bool TFdWrapper::valid() const noexcept {
         return fd_ != -1;
     }
 
-    void TFd::close() noexcept {
+    void TFdWrapper::close() noexcept {
         if (valid()) {
             ::close(fd_);
             reset();
         }
     }
 
-    void TFd::reset() noexcept {
+    void TFdWrapper::reset() noexcept {
         fd_ = -1;
     }
 

@@ -22,7 +22,7 @@ namespace NEventLoop::NIO {
     class TEpoller {
     private:
         static constexpr size_t MAX_EVENTS = 64;
-        TFd epoll_fd_;
+        TFdWrapper epoll_fd_;
         
     public:
         TEpoller();

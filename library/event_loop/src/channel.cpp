@@ -53,28 +53,33 @@ namespace NEventLoop {
     }
 
     void TChannel::enable_reading() {
+        uint32_t prev_events = events_;
         events_ |= EPOLLIN | EPOLLRDHUP;        
-        event_loop_.update_channel(*this);
+        event_loop_.update_channel(*this, prev_events);
     }
 
     void TChannel::disable_reading() {
+        uint32_t prev_events = events_;
         events_ &= ~(EPOLLIN | EPOLLRDHUP);
-        event_loop_.update_channel(*this);
+        event_loop_.update_channel(*this, prev_events);
     }
 
     void TChannel::enable_writing() {
+        uint32_t prev_events = events_;
         events_ |= EPOLLOUT;
-        event_loop_.update_channel(*this);
+        event_loop_.update_channel(*this, prev_events);
     }
 
     void TChannel::disable_writing() {
+        uint32_t prev_events = events_;
         events_ &= ~EPOLLOUT;
-        event_loop_.update_channel(*this);
+        event_loop_.update_channel(*this, prev_events);
     }
 
     void TChannel::disable_all() {
+        uint32_t prev_events = events_;
         events_ = 0;
-        event_loop_.update_channel(*this);
+        event_loop_.update_channel(*this, prev_events);
     }
 
     void TChannel::remove() {

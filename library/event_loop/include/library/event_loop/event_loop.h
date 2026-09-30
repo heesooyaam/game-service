@@ -36,16 +36,16 @@ namespace NEventLoop {
     private:
         friend class TChannel;
 
-        void update_channel(TChannel& channel);
+        void update_channel(TChannel& channel, uint32_t prev_events);
         void remove_channel(TChannel& channel);
 
         void process_pending_tasks();
 
     private:
         NIO::TEpoller poller_;
-        NIO::TEventFd notifier_;
+        NIO::TEvenTFdWrapper notifier_;
 
-        std::unordered_map<int32_t, TChannel*> channels_;
+        std::unordered_map<uint32_t, std::reference_wrapper<TChannel>> channels_;
 
         std::unique_ptr<TChannel> notify_channel_;
 

@@ -35,10 +35,6 @@ namespace NEventLoop {
             auto all_events = poller_.wait();
             for (const auto& [fd, events] : all_events) {
                 const auto it = channels_.find(fd);
-<<<<<<< HEAD
-
-=======
->>>>>>> 193c91e (better)
                 if (it == channels_.end()) {
                     continue;
                 }
@@ -90,12 +86,6 @@ namespace NEventLoop {
             channels_.erase(channel.fd());
             channel.registered_state_ = ERegistrationState::NOT_REGISTERED;
         }
-<<<<<<< HEAD
-
-        channels_.erase(channel.fd());
-        channel.registered_state_ = ERegistrationState::NOT_REGISTERED;
-=======
->>>>>>> 193c91e (better)
     }
 
     void TEventLoop::process_pending_tasks() {

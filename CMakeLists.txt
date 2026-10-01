@@ -12,6 +12,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CompilerOptions.cmake)
 enable_testing()
 
 add_subdirectory(library/test_framework)
+add_subdirectory(library/event_loop)
 add_subdirectory(library/common)
 add_subdirectory(library/game_core)
 add_subdirectory(library/http)

@@ -43,7 +43,7 @@ namespace NEventLoop {
 
     private:
         NIO::TEpoller poller_;
-        NIO::TEvenTFdWrapper notifier_;
+        NIO::TEventFdWrapper notifier_;
 
         std::unordered_map<uint32_t, std::reference_wrapper<TChannel>> channels_;
 

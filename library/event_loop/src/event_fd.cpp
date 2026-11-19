@@ -8,7 +8,7 @@
 
 namespace NEventLoop::NIO {
 
-    TEvenTFdWrapper::TEvenTFdWrapper()
+    TEventFdWrapper::TEventFdWrapper()
         : fd_(::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC))
     {
         if (!fd_.valid()) {
@@ -16,11 +16,11 @@ namespace NEventLoop::NIO {
         }
     }
 
-    int32_t TEvenTFdWrapper::fd() const noexcept {
+    int32_t TEventFdWrapper::fd() const noexcept {
         return fd_.get();
     }
 
-    void TEvenTFdWrapper::notify() noexcept {
+    void TEventFdWrapper::notify() noexcept {
         uint64_t value = 1;
         int64_t result;
 
@@ -37,7 +37,7 @@ namespace NEventLoop::NIO {
         }
     }
 
-    void TEvenTFdWrapper::consume() noexcept {
+    void TEventFdWrapper::consume() noexcept {
         uint64_t value = 0;
         int64_t result;
 

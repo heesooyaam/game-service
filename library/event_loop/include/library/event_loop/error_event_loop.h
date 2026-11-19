@@ -32,7 +32,7 @@ namespace NEventLoop::NError {
 
     class TEpollWaitEventError : public TEventLoopError {
     public:
-        TEpollWaitEventError(int error_code);
+        TEpollWaitEventError(const int error_code);
     };
 
 } // namespace NEventLoop::NError

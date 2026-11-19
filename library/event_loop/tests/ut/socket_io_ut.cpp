@@ -144,9 +144,10 @@ namespace NEventLoop::NIO::NTests {
         CHECK(socket.has_value());
 
         std::array<std::byte, 3> buffer{};
-        const auto result = socket->recv(buffer);
+        const TIOResult result = socket->recv(buffer);
 
-        CHECK(!result.has_value());
+        CHECK_EQ(result.status, EIOStatus::NOT_READY);
+        CHECK_EQ(result.process_bytes, 0);
 
         ::close(client_fd);
     }
@@ -182,10 +183,10 @@ namespace NEventLoop::NIO::NTests {
         );
 
         std::array<std::byte, 3> received{};
-        const auto result = socket->recv(received);
+        const TIOResult result = socket->recv(received);
 
-        CHECK(result.has_value());
-        CHECK_EQ(result.value(), 3);
+        CHECK_EQ(result.status, EIOStatus::SUCCESS);
+        CHECK_EQ(result.process_bytes, 3);
         CHECK(received == sent);
 
         ::close(client_fd);
@@ -211,10 +212,10 @@ namespace NEventLoop::NIO::NTests {
             std::byte{'z'}
         };
 
-        const auto result = socket->send(sent);
+        const TIOResult result = socket->send(sent);
 
-        CHECK(result.has_value());
-        CHECK_EQ(result.value(), 3);
+        CHECK_EQ(result.status, EIOStatus::SUCCESS);
+        CHECK_EQ(result.process_bytes, 3);
 
         std::array<std::byte, 3> received{};
         CHECK_EQ(
@@ -231,4 +232,5 @@ namespace NEventLoop::NIO::NTests {
 
         ::close(client_fd);
     }
+
 } // namespace NEventLoop::NIO::NTests

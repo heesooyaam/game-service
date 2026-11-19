@@ -27,22 +27,22 @@ namespace NEventLoop::NIO::NError {
 
     class TAcceptError : public TSocketError {
     public:
-        TAcceptError(const int error_code);
+        TAcceptError(const int32_t error_code);
     };
 
     class TListenError : public TSocketError {
     public:
-        TListenError(const int error_code);
+        TListenError(const int32_t error_code);
     };
 
     class TBindError : public TSocketError {
     public:
-        TBindError(const int error_code);
+        TBindError(const int32_t error_code);
     };
 
     class TInetPtonError : public TSocketError {
     public:
-        TInetPtonError(const int error_code);
+        TInetPtonError(const int32_t error_code);
     };
 
     class TInvalidIpAddressError : public TSocketError {
@@ -52,22 +52,22 @@ namespace NEventLoop::NIO::NError {
 
     class TSetSockoptError : public TSocketError {
     public:
-        TSetSockoptError(const int error_code);
+        TSetSockoptError(const int32_t error_code);
     };
 
     class TServerSocketCreateError : public TSocketError {
     public:
-        TServerSocketCreateError(const int error_code);
+        TServerSocketCreateError(const int32_t error_code);
     };
 
     class TSocketSendError : public TSocketError {
     public:
-        TSocketSendError(const int error_code);
+        TSocketSendError(const int32_t error_code);
     };
 
     class TSocketRecvError : public TSocketError {
     public:
-        TSocketRecvError(const int error_code);
+        TSocketRecvError(const int32_t error_code);
     };
 
 } // namespace NEventLoop::NIO::NError

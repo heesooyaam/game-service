@@ -33,47 +33,61 @@ namespace NEventLoop::NIO {
         return fd_.get();
     }
 
-    std::optional<size_t> TSocket::recv(std::span<std::byte> buffer) {
-        const std::ptrdiff_t bytes_received = ::recv(
+    TIOResult TSocket::recv(std::span<std::byte> buffer) {
+        const ptrdiff_t bytes_received = ::recv(
             fd_.get(),
             buffer.data(),
             buffer.size(),
             0
         );
 
-        if (bytes_received >= 0) {
-            return static_cast<size_t>(bytes_received);
+        if (bytes_received > 0) {
+            return {EIOStatus::SUCCESS, static_cast<size_t>(bytes_received)};
+        }
+
+        if (bytes_received == 0) {
+            return {EIOStatus::CLOSED, 0};
+        }
+
+        if (errno == EINTR) {
+            return {EIOStatus::INTERRUPTED, 0};
         }
 
         if (
-            errno == EINTR ||
             errno == EAGAIN ||
             errno == EWOULDBLOCK
         ) {
-            return std::nullopt;
+            return {EIOStatus::NOT_READY, 0};
         }
 
         throw NError::TSocketRecvError(errno);
     }
 
-    std::optional<size_t> TSocket::send(std::span<const std::byte> buffer) {
-        const std::ptrdiff_t bytes_sent = ::send(
+    TIOResult TSocket::send(std::span<const std::byte> buffer) {
+        const ptrdiff_t bytes_sent = ::send(
             fd_.get(),
             buffer.data(),
             buffer.size(),
             MSG_NOSIGNAL
         );
 
-        if (bytes_sent >= 0) {
-            return static_cast<size_t>(bytes_sent);
+        if (bytes_sent > 0) {
+            return {EIOStatus::SUCCESS, static_cast<size_t>(bytes_sent)};
+        }
+
+        if (bytes_sent == 0) {
+            return {EIOStatus::CLOSED, 0};
+        }
+
+        if (errno == EINTR) {
+            return {EIOStatus::INTERRUPTED, 0};
         }
 
         if (
-            errno == EINTR ||
             errno == EAGAIN ||
             errno == EWOULDBLOCK
         ) {
-            return std::nullopt;
+            return {EIOStatus::NOT_READY, 0};
         }
 
         throw NError::TSocketSendError(errno);
@@ -84,9 +98,7 @@ namespace NEventLoop::NIO {
     {}
 
     TServerSocket::TServerSocket()
-        : fd_(
-            create_socket_or_throw()
-        ) 
+        : fd_(create_socket_or_throw()) 
     {
         assert(fd_.valid());   
     }

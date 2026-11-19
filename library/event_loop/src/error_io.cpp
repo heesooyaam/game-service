@@ -44,7 +44,7 @@ namespace NEventLoop::NIO::NError {
         )
     {}
 
-    TAcceptError::TAcceptError(const int error_code)
+    TAcceptError::TAcceptError(const int32_t error_code)
         : TSocketError(
             "ACCEPT ERROR",
             std::format(
@@ -55,7 +55,7 @@ namespace NEventLoop::NIO::NError {
         )
     {}
 
-    TListenError::TListenError(const int error_code)
+    TListenError::TListenError(const int32_t error_code)
         : TSocketError(
             "LISTEN ERROR",
             std::format(
@@ -66,7 +66,7 @@ namespace NEventLoop::NIO::NError {
         )
     {}
 
-    TBindError::TBindError(const int error_code)
+    TBindError::TBindError(const int32_t error_code)
         : TSocketError(
             "BIND ERROR",
             std::format(
@@ -77,7 +77,7 @@ namespace NEventLoop::NIO::NError {
         )
     {}
 
-    TInetPtonError::TInetPtonError(const int error_code)
+    TInetPtonError::TInetPtonError(const int32_t error_code)
         : TSocketError(
             "INETPTON ERROR",
             std::format(
@@ -95,7 +95,7 @@ namespace NEventLoop::NIO::NError {
         )
     {}
 
-    TSetSockoptError::TSetSockoptError(const int error_code)
+    TSetSockoptError::TSetSockoptError(const int32_t error_code)
         : TSocketError(
             "SETSOCKOPT ERROR",
             std::format(
@@ -106,7 +106,7 @@ namespace NEventLoop::NIO::NError {
         )
     {}
 
-    TServerSocketCreateError::TServerSocketCreateError(const int error_code)
+    TServerSocketCreateError::TServerSocketCreateError(const int32_t error_code)
         : TSocketError(
             "CREATE SOCKET ERROR",
             std::format(
@@ -117,7 +117,7 @@ namespace NEventLoop::NIO::NError {
         )
     {}
 
-    TSocketSendError::TSocketSendError(const int error_code)
+    TSocketSendError::TSocketSendError(const int32_t error_code)
         : TSocketError(
             "SOCKET SEND ERROR",
             std::format(
@@ -128,7 +128,7 @@ namespace NEventLoop::NIO::NError {
         )
     {}
 
-    TSocketRecvError::TSocketRecvError(const int error_code)
+    TSocketRecvError::TSocketRecvError(const int32_t error_code)
         : TSocketError(
             "SOCKET RECV ERROR",
             std::format(

@@ -15,6 +15,18 @@ namespace NEventLoop::NIO {
         std::uint16_t port = 0;
     };
 
+    enum class EIOStatus : uint8_t {
+        SUCCESS = 0,
+        INTERRUPTED,
+        NOT_READY,
+        CLOSED
+    };
+
+    struct TIOResult {
+        EIOStatus status = EIOStatus::NOT_READY;
+        size_t process_bytes = 0;
+    };
+
     class TServerSocket;
 
     class TSocket {
@@ -29,8 +41,8 @@ namespace NEventLoop::NIO {
 
         int32_t fd() const noexcept;
 
-        std::optional<size_t> recv(std::span<std::byte> buffer);
-        std::optional<size_t> send(std::span<const std::byte> buffer);
+        TIOResult recv(std::span<std::byte> buffer);
+        TIOResult send(std::span<const std::byte> buffer);
 
     private:
         friend class TServerSocket;

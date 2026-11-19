@@ -43,7 +43,7 @@ namespace NEventLoop::NError {
         )
     {}
 
-    TEpollWaitEventError::TEpollWaitEventError(const int error_code)
+    TEpollWaitEventError::TEpollWaitEventError(const int32_t error_code)
         : TEventLoopError(
             "EVENT LOOP ERROR",
             std::format(

@@ -486,7 +486,7 @@ namespace NCommon::NStruct::NTests {
         vector.emplace_back(42);
 
         const auto address =
-            reinterpret_cast<std::uintptr_t>(vector.data());
+            reinterpret_cast<uintptr_t>(vector.data());
 
         CHECK_EQ(address % alignof(TAlignedValue), 0);
         CHECK_EQ(vector[0].value, 42);

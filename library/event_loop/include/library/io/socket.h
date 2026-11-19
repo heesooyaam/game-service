@@ -27,10 +27,10 @@ namespace NEventLoop::NIO {
         TSocket(TSocket&&) noexcept = default;
         TSocket& operator=(TSocket&&) noexcept = default;
 
-        std::int32_t fd() const noexcept;
+        int32_t fd() const noexcept;
 
-        std::optional<std::size_t> recv(std::span<std::byte> buffer);
-        std::optional<std::size_t> send(std::span<const std::byte> buffer);
+        std::optional<size_t> recv(std::span<std::byte> buffer);
+        std::optional<size_t> send(std::span<const std::byte> buffer);
 
     private:
         friend class TServerSocket;
@@ -52,7 +52,7 @@ namespace NEventLoop::NIO {
         TServerSocket(TServerSocket&&) noexcept = default;
         TServerSocket& operator=(TServerSocket&&) noexcept = default;
 
-        std::int32_t fd() const noexcept;
+        int32_t fd() const noexcept;
 
         void bind(const TSocketAddress& address);
         void listen();

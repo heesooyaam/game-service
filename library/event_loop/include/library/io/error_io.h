@@ -7,12 +7,12 @@ namespace NEventLoop::NIO::NError {
 
     class TNIOError : public std::runtime_error {
     protected:
-        explicit TNIOError(std::string_view, std::string_view);
+        explicit TNIOError(std::string_view label, std::string_view msg);
     };
 
     class TEventLoopIOError : public TNIOError {
     protected:
-        explicit TEventLoopIOError(std::string_view, std::string_view);
+        explicit TEventLoopIOError(std::string_view label, std::string_view msg);
     };
 
     class TEventFdCreateError : public TEventLoopIOError {
@@ -22,7 +22,7 @@ namespace NEventLoop::NIO::NError {
 
     class TSocketError : public TNIOError {
     protected:
-        explicit TSocketError(std::string_view, std::string_view);
+        explicit TSocketError(std::string_view label, std::string_view msg);
     };
 
     class TAcceptError : public TSocketError {

@@ -7,7 +7,7 @@ namespace NEventLoop::NError {
 
     class TEventLoopError : public std::runtime_error {
     protected:
-        explicit TEventLoopError(std::string_view, std::string_view);
+        explicit TEventLoopError(std::string_view label, std::string_view msg);
     };
 
     class TEpollCreateError : public TEventLoopError {

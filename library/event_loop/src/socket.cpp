@@ -12,16 +12,16 @@
 namespace {
 
     int create_socket_or_throw() {
-        const int result = ::socket(
+        const int socket_fd = ::socket(
             AF_INET, 
             SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 
             0
         );
-        if (result == -1) {
+        if (socket_fd == -1) {
             throw NEventLoop::NIO::NError::TServerSocketCreateError(errno);
         }
 
-        return result;
+        return socket_fd;
     }
 
 }
@@ -29,20 +29,20 @@ namespace {
 //toDO: read about flags && errno
 namespace NEventLoop::NIO {
 
-    std::int32_t TSocket::fd() const noexcept {
+    int32_t TSocket::fd() const noexcept {
         return fd_.get();
     }
 
-    std::optional<std::size_t> TSocket::recv(std::span<std::byte> buffer) {
-        const std::ptrdiff_t result = ::recv(
+    std::optional<size_t> TSocket::recv(std::span<std::byte> buffer) {
+        const std::ptrdiff_t bytes_received = ::recv(
             fd_.get(),
             buffer.data(),
             buffer.size(),
             0
         );
 
-        if (result >= 0) {
-            return static_cast<std::size_t>(result);
+        if (bytes_received >= 0) {
+            return static_cast<size_t>(bytes_received);
         }
 
         if (
@@ -56,16 +56,16 @@ namespace NEventLoop::NIO {
         throw NError::TSocketRecvError(errno);
     }
 
-    std::optional<std::size_t> TSocket::send(std::span<const std::byte> buffer) {
-        const std::ptrdiff_t result = ::send(
+    std::optional<size_t> TSocket::send(std::span<const std::byte> buffer) {
+        const std::ptrdiff_t bytes_sent = ::send(
             fd_.get(),
             buffer.data(),
             buffer.size(),
             MSG_NOSIGNAL
         );
 
-        if (result >= 0) {
-            return static_cast<std::size_t>(result);
+        if (bytes_sent >= 0) {
+            return static_cast<size_t>(bytes_sent);
         }
 
         if (
@@ -91,7 +91,7 @@ namespace NEventLoop::NIO {
         assert(fd_.valid());   
     }
    
-    std::int32_t TServerSocket::fd() const noexcept {
+    int32_t TServerSocket::fd() const noexcept {
         return fd_.get();
     }
 
@@ -115,17 +115,17 @@ namespace NEventLoop::NIO {
         socket_address.sin_family = AF_INET;
         socket_address.sin_port = htons(address.port);
         
-        const int result = ::inet_pton(
+        const int inet_pton_result = ::inet_pton(
             AF_INET,
             address.ip.c_str(),
             &socket_address.sin_addr
         );
 
-        if (result == -1) {
+        if (inet_pton_result == -1) {
             throw NError::TInetPtonError(errno);
         } 
         
-        if (result == 0) {
+        if (inet_pton_result == 0) {
             throw NError::TInvalidIpAddressError(address.ip);
         }
     
@@ -163,7 +163,8 @@ namespace NEventLoop::NIO {
             return TSocket(TFdWrapper(fd));
         }
 
-        if (errno == EINTR ||
+        if (
+            errno == EINTR ||
             errno == EAGAIN ||
             errno == EWOULDBLOCK)
         {

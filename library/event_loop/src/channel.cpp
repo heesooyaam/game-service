@@ -10,7 +10,9 @@ namespace NEventLoop {
     TChannel::TChannel(TEventLoop& event_loop, int32_t fd)
         : event_loop_(event_loop)
         , fd_(fd)
-    {}
+    {
+        assert(fd_ != -1);
+    }
 
     TChannel::~TChannel() {
         assert(!is_registered());

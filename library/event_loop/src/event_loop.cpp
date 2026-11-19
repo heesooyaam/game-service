@@ -90,13 +90,12 @@ namespace NEventLoop {
                     channel.events_ = prev_events;
                     throw;
                 } catch (...) {
-                    assert(false);
+                    std::terminate();
                 }
 
                 channels_.erase(channel.fd());
                 channel.registered_state_ = ERegistrationState::NOT_REGISTERED;
             }
-
             return;
         }
 
@@ -118,7 +117,7 @@ namespace NEventLoop {
                     channel.events_ = prev_events;
                     throw;
                 } catch (...) {
-                    assert(false);
+                    std::terminate();
                 }
 
                 channel.registered_state_ = ERegistrationState::REGISTERED;
@@ -135,7 +134,7 @@ namespace NEventLoop {
                 channel.events_ = prev_events;
                 throw;
             } catch(...) {
-                assert(false);
+                std::terminate();
             }
         }
     }

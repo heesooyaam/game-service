@@ -59,7 +59,7 @@ namespace NEventLoop {
         TCallback error_callback_;
         TCallback close_callback_;
 
-        const int32_t fd_;
+        const int32_t fd_ = -1;
         uint32_t events_ = 0;
 
         ERegistrationState registered_state_ = ERegistrationState::NOT_REGISTERED;

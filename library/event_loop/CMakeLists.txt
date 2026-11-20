@@ -1,4 +1,5 @@
 add_library(event_loop
+    src/socket.cpp
     src/channel.cpp
     src/epoller.cpp
     src/event_fd.cpp
